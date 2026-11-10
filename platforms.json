@@ -49,5 +49,12 @@
       "icon": "book",
       "color": "#15803D"
     }
+  ],
+  "access": [
+    {
+      "email": "ymahajna@nvidia.com",
+      "platform": "*",
+      "level": "manager"
+    }
   ]
 }
