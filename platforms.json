@@ -1,0 +1,53 @@
+{
+  "github": {
+    "owner": "yousefmahajna",
+    "hubRepo": "interconnect-process-lab"
+  },
+  "platforms": [
+    {
+      "id": "adhesives",
+      "title": "Adhesive Inventory",
+      "group": "Lab",
+      "url": "https://yousefmahajna.github.io/lab-adhesives/",
+      "repo": "lab-adhesives",
+      "icon": "drop",
+      "color": "#B45309"
+    },
+    {
+      "id": "activities",
+      "title": "Lab Activities",
+      "group": "Lab",
+      "url": "https://yousefmahajna.github.io/lab-activity-tracker/",
+      "repo": "lab-activity-tracker",
+      "icon": "clipboard",
+      "color": "#0F766E"
+    },
+    {
+      "id": "engineers",
+      "title": "Practical Engineers",
+      "group": "Lab",
+      "url": "https://yousefmahajna.github.io/lab-practical-engineers/",
+      "repo": "lab-practical-engineers",
+      "icon": "users",
+      "color": "#4338CA"
+    },
+    {
+      "id": "xsection",
+      "title": "X-Section",
+      "group": "Lab",
+      "url": "",
+      "repo": "",
+      "icon": "layers",
+      "color": "#BE185D"
+    },
+    {
+      "id": "recipes",
+      "title": "Process Recipe Library",
+      "group": "Process",
+      "url": "https://yousefmahajna.github.io/Process-Recipe-Library/",
+      "repo": "Process-Recipe-Library",
+      "icon": "book",
+      "color": "#15803D"
+    }
+  ]
+}

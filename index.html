@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Interconnect Process Lab</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230F172A'/%3E%3Cg fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='15' cy='32' r='6'/%3E%3Ccircle cx='49' cy='17' r='6'/%3E%3Ccircle cx='49' cy='47' r='6'/%3E%3Cpath d='M21 32h11c5 0 5-15 12-15M32 32c7 0 7 15 12 15'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #EEF1F6; --surface: #FFFFFF; --ink: #0F172A; --muted: #475569; --line: #DDE3EC;
+  --btn: #0F172A; --btn-ink: #FFFFFF; --focus: #2563EB; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1119; --surface: #161B26; --ink: #F1F5F9; --muted: #A9B4C4; --line: #2A3140;
+    --btn: #F1F5F9; --btn-ink: #0F172A; --focus: #7CA2FF; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px; line-height: 1.5;
+}
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.page { max-width: 1100px; margin: 0 auto; padding: 64px 32px 72px; display: flex; flex-direction: column; align-items: center; gap: 36px; text-align: center; }
+.mark { width: 56px; height: 56px; border-radius: 18px; background: var(--ink); display: grid; place-items: center; }
+.mark svg { width: 30px; height: 30px; stroke: var(--bg); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+h1 { margin: 0; font-size: clamp(2.4rem, 7vw, 4.25rem); line-height: 1; letter-spacing: -0.035em; font-weight: 700; }
+.sub { margin: 12px auto 0; max-width: 520px; font-size: 1.15rem; color: var(--muted); }
+.search { display: flex; align-items: center; gap: 10px; width: 100%; max-width: 420px; height: 48px; padding: 0 18px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+.search svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 2; stroke-linecap: round; flex: none; }
+.search input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; font-size: 15px; color: var(--ink); }
+.search input::placeholder { color: var(--muted); }
+.search:focus-within { outline: 3px solid var(--focus); outline-offset: 3px; }
+.dock { width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 36px; padding: 48px 24px; display: flex; flex-wrap: wrap; justify-content: center; gap: 40px 32px; min-height: 240px; }
+.cell { width: 170px; }
+.item { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; text-decoration: none; color: var(--ink); text-align: center; }
+.disc { width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; transition: transform .18s ease; }
+.disc svg { width: 52px; height: 52px; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+a.item:hover .disc { transform: scale(1.07); }
+.off .disc { border: 3px dashed var(--muted); }
+.off .disc svg { stroke: var(--muted); }
+.name { font-weight: 600; font-size: 18px; line-height: 1.25; }
+.tag { font-size: 14px; color: var(--muted); }
+.stamp { font-size: 13px; color: var(--muted); margin-top: -6px; }
+.empty { align-self: center; color: var(--muted); font-size: 17px; padding: 40px 0; max-width: 46ch; }
+.add { height: 52px; padding: 0 30px; border-radius: 999px; border: 0; background: var(--btn); color: var(--btn-ink); font: inherit; font-weight: 600; font-size: 16px; cursor: pointer; transition: transform .15s; }
+.add:hover { transform: translateY(-2px); }
+dialog { width: min(480px, calc(100vw - 32px)); padding: 26px; border-radius: 24px; text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }
+dialog::backdrop { background: rgba(5, 10, 20, .6); }
+dialog h2 { margin: 0 0 4px; font-size: 1.4rem; }
+dialog p { margin: 4px 0 0; color: var(--muted); font-size: .95rem; }
+label.f { display: block; font-weight: 500; margin: 14px 0 6px; font-size: .95rem; }
+dialog input, dialog select, dialog textarea { width: 100%; padding: 11px 14px; font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
+dialog textarea { font-family: ui-monospace, Consolas, monospace; font-size: 13px; min-height: 190px; resize: vertical; }
+.err { color: #E11D48; font-size: .9rem; min-height: 1.3em; margin-top: 10px; }
+.acts { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+.b2 { display: inline-flex; align-items: center; font: inherit; font-weight: 600; cursor: pointer; padding: 11px 22px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--ink); text-decoration: none; }
+.b2.go { background: var(--btn); border-color: var(--btn); color: var(--btn-ink); }
+@media (max-width: 620px) {
+  .page { padding: 40px 18px 56px; gap: 28px; }
+  .dock { padding: 36px 12px; gap: 32px 12px; border-radius: 28px; }
+  .cell { width: 140px; }
+  .disc { width: 96px; height: 96px; }
+  .disc svg { width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .disc, .add { transition: none; }
+  a.item:hover .disc, .add:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M7.5 12h4c2 0 2-6 5-6M11.5 12c3 0 3 6 5 6"/></svg></div>
+  <div>
+    <h1>Interconnect Process Lab</h1>
+    <p class="sub">Every lab platform in one place. Select one to open it in a new tab.</p>
+  </div>
+  <label class="search">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="q" type="search" placeholder="Search platforms" aria-label="Search platforms" autocomplete="off">
+  </label>
+  <main class="dock" id="dock" aria-live="polite"><div class="empty">Loading platforms…</div></main>
+  <button class="add" id="addBtn" type="button">Add platform</button>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <div id="step1">
+    <h2 id="dlgTitle">Add a platform</h2>
+    <p>Fill in the details. You will get one entry to paste into <code>platforms.json</code> on GitHub.</p>
+    <label class="f" for="fTitle">Name</label>
+    <input id="fTitle" type="text" autocomplete="off">
+    <label class="f" for="fUrl">Link</label>
+    <input id="fUrl" type="url" placeholder="https://yousefmahajna.github.io/…" autocomplete="off">
+    <label class="f" for="fGroup">Group</label>
+    <input id="fGroup" type="text" placeholder="Lab, Process, …" autocomplete="off">
+    <label class="f" for="fRepo">GitHub repo name (optional, shows the last update)</label>
+    <input id="fRepo" type="text" autocomplete="off">
+    <label class="f" for="fIcon">Icon</label>
+    <select id="fIcon"><option value="grid">Grid</option><option value="drop">Drop</option><option value="clipboard">Clipboard</option><option value="users">People</option><option value="layers">Layers</option><option value="book">Book</option></select>
+    <div class="err" id="err" role="alert"></div>
+    <div class="acts"><button class="b2" id="cancel" type="button">Cancel</button><button class="b2 go" id="make" type="button">Create entry</button></div>
+  </div>
+  <div id="step2" hidden>
+    <h2>Your entry</h2>
+    <p>Copy it, then add it inside the <code>platforms</code> list in <code>platforms.json</code> and commit. Remember a comma between entries.</p>
+    <label class="f" for="snippet">Entry</label>
+    <textarea id="snippet" readonly></textarea>
+    <div class="err" id="copied" role="status"></div>
+    <div class="acts"><button class="b2" id="close2" type="button">Close</button><button class="b2" id="copy" type="button">Copy entry</button><a class="b2 go" id="editLink" target="_blank" rel="noopener noreferrer" href="#">Open platforms.json</a></div>
+  </div>
+</dialog>
+
+<script>
+(function () {
+  var ICONS = {
+    drop: '<path d="M12 3C12 3 5 11 5 15a7 7 0 0 0 14 0c0-4-7-12-7-12z"/><path d="M9 15a3 3 0 0 0 3 3"/>',
+    clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11l1.6 1.6L14 9M9 17h6"/>',
+    users: '<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.8.2 5 2.4 5 5.3"/>',
+    layers: '<path d="M12 3 3 8l9 5 9-5-9-5z"/><path d="M3 12.5l9 5 9-5M3 16.5l9 5 9-5"/>',
+    book: '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M8 7h8M8 11h6"/>',
+    grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'
+  };
+  var PALETTE = ["#B45309", "#0F766E", "#4338CA", "#BE185D", "#15803D", "#6D28D9"];
+  var NS = "http://www.w3.org/2000/svg";
+  var CFG = { owner: "yousefmahajna", hubRepo: "interconnect-process-lab" };
+  var PLATFORMS = [], STAMPS = {};
+  var dock = document.getElementById("dock"), q = document.getElementById("q");
+  var fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
+
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  function icon(name, color) {
+    var s = document.createElementNS(NS, "svg");
+    s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("aria-hidden", "true");
+    if (color) s.setAttribute("stroke", color);
+    s.innerHTML = ICONS[name] || ICONS.grid;
+    return s;
+  }
+  function message(text) { dock.innerHTML = ""; dock.appendChild(el("div", "empty", text)); }
+
+  function render() {
+    var term = q.value.trim().toLowerCase();
+    var items = PLATFORMS.filter(function (it) { return !term || (it.title + " " + (it.group || "")).toLowerCase().indexOf(term) !== -1; });
+    if (!items.length) { message(term ? "No platform matches \u201C" + q.value.trim() + "\u201D. Try a different word." : "No platforms yet."); return; }
+    dock.innerHTML = "";
+    items.forEach(function (it, i) {
+      var cell = el("div", "cell");
+      var node = it.url ? el("a", "item") : el("div", "item off");
+      if (it.url) { node.href = it.url; node.target = "_blank"; node.rel = "noopener noreferrer"; }
+      var disc = el("span", "disc");
+      if (it.url) disc.style.background = it.color || PALETTE[i % PALETTE.length];
+      disc.appendChild(icon(it.icon, it.url ? "#FFFFFF" : null));
+      node.appendChild(disc);
+      node.appendChild(el("span", "name", it.title));
+      node.appendChild(el("span", "tag", it.url ? (it.group || "") : "Link needed"));
+      if (it.url && it.repo && STAMPS[it.repo]) node.appendChild(el("span", "stamp", "Updated " + fmt.format(new Date(STAMPS[it.repo]))));
+      cell.appendChild(node); dock.appendChild(cell);
+    });
+  }
+  q.addEventListener("input", render);
+
+  // Last update of each platform repo, read from GitHub. Cached for 10 minutes.
+  function loadStamps() {
+    var cache = {};
+    try { cache = JSON.parse(sessionStorage.getItem("ipl-stamps") || "{}"); } catch (e) { cache = {}; }
+    PLATFORMS.forEach(function (it) {
+      if (!it.url || !it.repo) return;
+      var c = cache[it.repo];
+      if (c && Date.now() - c.t < 600000) { STAMPS[it.repo] = c.d; return; }
+      fetch("https://api.github.com/repos/" + encodeURIComponent(CFG.owner) + "/" + encodeURIComponent(it.repo))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          if (!d || !d.pushed_at) return;
+          STAMPS[it.repo] = d.pushed_at; cache[it.repo] = { t: Date.now(), d: d.pushed_at };
+          try { sessionStorage.setItem("ipl-stamps", JSON.stringify(cache)); } catch (e) {}
+          render();
+        }).catch(function () {});
+    });
+    render();
+  }
+
+  fetch("platforms.json", { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("bad"); return r.json(); })
+    .then(function (d) { PLATFORMS = d.platforms || []; if (d.github) CFG = d.github; render(); loadStamps(); })
+    .catch(function () { message("Could not load platforms.json. Open this page from its GitHub Pages link, not as a local file."); });
+
+  // Add platform: builds one entry to paste into platforms.json
+  var dlg = document.getElementById("dlg"), step1 = document.getElementById("step1"), step2 = document.getElementById("step2");
+  var f = { title: document.getElementById("fTitle"), url: document.getElementById("fUrl"), group: document.getElementById("fGroup"), repo: document.getElementById("fRepo"), icon: document.getElementById("fIcon") };
+  var err = document.getElementById("err"), snippet = document.getElementById("snippet"), copied = document.getElementById("copied");
+  document.getElementById("addBtn").addEventListener("click", function () {
+    f.title.value = f.url.value = f.group.value = f.repo.value = ""; f.icon.value = "grid"; err.textContent = ""; copied.textContent = "";
+    step1.hidden = false; step2.hidden = true; dlg.showModal(); f.title.focus();
+  });
+  document.getElementById("cancel").addEventListener("click", function () { dlg.close(); });
+  document.getElementById("close2").addEventListener("click", function () { dlg.close(); });
+  document.getElementById("make").addEventListener("click", function () {
+    var title = f.title.value.trim(), url = f.url.value.trim();
+    if (!title) { err.textContent = "Enter a name for the platform."; f.title.focus(); return; }
+    if (url && !/^https:\/\//i.test(url)) { err.textContent = "Enter a link that starts with https://, or leave it empty."; f.url.focus(); return; }
+    var id = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "platform";
+    var entry = { id: id, title: title, group: f.group.value.trim(), url: url, repo: f.repo.value.trim(), icon: f.icon.value, color: PALETTE[PLATFORMS.length % PALETTE.length] };
+    snippet.value = JSON.stringify(entry, null, 2).replace(/^/gm, "    ");
+    document.getElementById("editLink").href = "https://github.com/" + CFG.owner + "/" + CFG.hubRepo + "/edit/main/platforms.json";
+    step1.hidden = true; step2.hidden = false;
+  });
+  document.getElementById("copy").addEventListener("click", function () {
+    function done() { copied.style.color = "var(--muted)"; copied.textContent = "Copied."; }
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(snippet.value).then(done, function () { snippet.select(); }); }
+    else { snippet.select(); try { document.execCommand("copy"); done(); } catch (e) {} }
+  });
+})();
+</script>
+</body>
+</html>
