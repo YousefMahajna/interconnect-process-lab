@@ -52,9 +52,11 @@
   ],
   "access": [
     {
+      "name": "Yousef Mahajna",
       "email": "ymahajna@nvidia.com",
       "platform": "*",
-      "level": "manager"
+      "level": "admin"
     }
   ]
 }
+

@@ -20,6 +20,7 @@
   }
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--ink); font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; font-size: 16px; line-height: 1.5; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .page { max-width: 1100px; margin: 0 auto; padding: 64px 32px 72px; display: flex; flex-direction: column; align-items: center; gap: 32px; text-align: center; }
@@ -79,6 +80,16 @@ td input, td select { width: 100%; height: 42px; padding: 0 12px; border-radius:
   .panel { padding: 22px 16px; }
 }
 @media (prefers-reduced-motion: reduce) { .disc { transition: none; } a.item:hover .disc { transform: none; } }
+
+button.item { background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+#usersTitle:focus { outline: none; }
+.notice { font-size: 14px; max-width: 65ch; color: var(--muted); margin: 0; }
+.readonly { font-size: 14px; }
+.draft-status { font-size: 14px; color: var(--muted); }
+table { min-width: 900px; }
+th:first-child { width: 20%; }
+th:nth-child(2) { width: 28%; }
 </style>
 </head>
 <body>
@@ -86,7 +97,7 @@ td input, td select { width: 100%; height: 42px; padding: 0 12px; border-radius:
   <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M7.5 12h4c2 0 2-6 5-6M11.5 12c3 0 3 6 5 6"/></svg></div>
   <div>
     <h1>Interconnect Process Lab</h1>
-    <p class="sub">Every lab platform in one place. You see the platforms listed for your email.</p>
+    <p class="sub">Every lab platform in one place. Choose your NVIDIA email to see your application list.</p>
     <div class="who" id="who"></div>
   </div>
   <label class="search" id="searchBox" hidden>
@@ -94,31 +105,38 @@ td input, td select { width: 100%; height: 42px; padding: 0 12px; border-radius:
     <input id="q" type="search" placeholder="Search platforms" aria-label="Search platforms" autocomplete="off">
   </label>
   <main class="card" id="main" aria-live="polite"><div class="empty" style="margin:auto;display:block;text-align:center">Loading…</div></main>
-  <button class="btn" id="manage" type="button" hidden aria-expanded="false" aria-controls="panel">Manage access</button>
 
-  <section class="card panel" id="panel" hidden aria-label="Manage access">
-    <div>
-      <h2>Who can open what</h2>
-      <p>One row per person and platform. Choose All platforms to give access to everything.</p>
+  <p class="notice" id="accessNotice" hidden>Email selection only: addresses are not verified. Permission levels currently control this application list. Each application needs its own sign-in to enforce these permissions.</p>
+  <section class="card panel" id="panel" hidden aria-labelledby="usersTitle">
+    <div class="panel-head">
+      <div><h2 id="usersTitle" tabindex="-1">Users</h2><p>Manage names, NVIDIA emails, applications, and permission levels.</p></div>
+      <button class="btn ghost" id="back" type="button">Back to applications</button>
     </div>
+    <p>Use one row per user and application. “All applications” applies the selected level everywhere. Yousef Mahajna is the Administrator for all applications.</p>
+    <p class="note">Viewer: view information. Editor: view and edit. Manager: manage an application. Administrator: manage all applications and the Users list. These levels require enforcement in the applications before they restrict access.</p>
     <div class="scroll">
       <table>
-        <thead><tr><th>Email</th><th>Platform</th><th>Access level</th><th></th></tr></thead>
+        <caption class="note" style="text-align:left;padding:0 10px 12px">Application permissions</caption>
+        <thead><tr><th scope="col">Name</th><th scope="col">NVIDIA email</th><th scope="col">Application</th><th scope="col">Permission level</th><th scope="col">Action</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
     <div class="acts">
-      <button class="btn ghost" id="addRow" type="button">Add row</button>
-      <button class="btn" id="copyJson" type="button">Copy updated platforms.json</button>
-      <a class="btn ghost" id="editLink" target="_blank" rel="noopener noreferrer" href="#">Open platforms.json on GitHub</a>
+      <button class="btn ghost" id="addRow" type="button">Add user / application</button>
+      <button class="btn" id="copyJson" type="button">Copy updated users file</button>
+      <button class="btn ghost" id="downloadJson" type="button">Download updated users file</button>
+      <a class="btn ghost" id="editLink" target="_blank" rel="noopener noreferrer" href="https://github.com/YousefMahajna/interconnect-process-lab/edit/main/platforms.json">Open file on GitHub</a>
     </div>
+    <div id="draftStatus" class="draft-status" role="status">No changes.</div>
     <div class="msg" id="msg" role="alert"></div>
-    <p class="note">Changes here are not saved yet. Copy the updated file, open platforms.json on GitHub, replace its content and commit. This email check only decides what this page shows. It is not a security lock: anyone can read platforms.json or open a platform link directly.</p>
+    <p class="note">To publish changes, copy or download the updated platforms.json, then replace that file on GitHub and commit. Exporting does not save changes to the live site. This public repository's users file is readable by anyone; store verified identities and permissions in a protected service when sign-in is connected.</p>
   </section>
 </div>
 
+<script src="access-policy.js"></script>
 <script>
 (function () {
+  'use strict';
   var ICONS = {
     drop: '<path d="M12 3C12 3 5 11 5 15a7 7 0 0 0 14 0c0-4-7-12-7-12z"/><path d="M9 15a3 3 0 0 0 3 3"/>',
     clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 11l1.6 1.6L14 9M9 17h6"/>',
@@ -127,161 +145,206 @@ td input, td select { width: 100%; height: 42px; padding: 0 12px; border-radius:
     book: '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M8 7h8M8 11h6"/>',
     grid: '<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'
   };
-  var LEVEL = { viewer: "Viewer", editor: "Editor", manager: "Manager" };
-  var RANK = { viewer: 1, editor: 2, manager: 3 };
+
+  var Policy = window.LabAccess;
   var NS = "http://www.w3.org/2000/svg";
   var CFG = { owner: "yousefmahajna", hubRepo: "interconnect-process-lab" };
-  var DATA = null, PLATFORMS = [], ACCESS = null, DRAFT = [], STAMPS = {}, EMAIL = "", term = "";
-  var main = document.getElementById("main"), q = document.getElementById("q"), msg = document.getElementById("msg");
+  var DATA = null, PLATFORMS = [], ACCESS = [], DRAFT = [], STAMPS = {};
+  var EMAIL = "", term = "", dirty = false, usersOpen = false;
+  var main = $("main"), q = $("q"), msg = $("msg");
   var fmt = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" });
-
-  try { EMAIL = localStorage.getItem("ipl-email") || ""; } catch (e) {}
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
-  function norm(s) { return String(s || "").trim().toLowerCase(); }
+  try {
+    var stored = localStorage.getItem("ipl-email") || "";
+    if (Policy.validEmail(stored)) EMAIL = Policy.normalize(stored);
+    else localStorage.removeItem("ipl-email");
+  } catch (e) {}
   function icon(name, color) {
     var s = document.createElementNS(NS, "svg");
     s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("aria-hidden", "true");
     if (color) s.setAttribute("stroke", color);
     s.innerHTML = ICONS[name] || ICONS.grid; return s;
   }
-
-  function mine() { return (ACCESS || []).filter(function (a) { return norm(a.email) === norm(EMAIL); }); }
-  function levelFor(p) {
-    var best = null;
-    mine().forEach(function (a) { if ((a.platform === "*" || a.platform === p.id) && (!best || RANK[a.level] > RANK[best])) best = a.level; });
-    return best;
+  function levelFor(p) { return Policy.levelFor(EMAIL, p.id, ACCESS); }
+  function showMessage(text) {
+    main.className = "card"; main.replaceChildren();
+    var d = el("div", "empty", text); d.style.margin = "48px auto"; main.appendChild(d);
   }
-  function isManager() { return mine().some(function (a) { return a.platform === "*" && a.level === "manager"; }); }
-
-  function showMessage(text) { main.className = "card"; main.innerHTML = ""; var d = el("div", "empty", text); d.style.margin = "48px auto"; main.appendChild(d); }
-
+  function setDirty(value) {
+    dirty = value;
+    $("draftStatus").textContent = dirty ? "Unpublished changes. Export the file and commit it on GitHub to publish." : "No changes.";
+    msg.textContent = "";
+  }
+  function clearDraft() { dirty = false; DRAFT = []; usersOpen = false; }
+  function canLeave() { return !dirty || window.confirm("Discard your unpublished Users changes?"); }
   function signIn() {
-    main.className = "card gate"; main.innerHTML = "";
-    main.appendChild(el("h2", null, "Enter your work email"));
-    main.appendChild(el("p", null, "You will see the platforms listed for your email. This page does not lock the platform sites."));
+    main.className = "card gate"; main.replaceChildren();
+    main.appendChild(el("h2", null, "Enter your NVIDIA email"));
+    main.appendChild(el("p", null, "Use your @nvidia.com email to select your application list."));
+    main.appendChild(el("p", "note", "Email selection only. Mailbox verification is not connected yet."));
     var form = el("form"), input = el("input"), go = el("button", "btn", "Continue");
-    input.type = "email"; input.required = true; input.placeholder = "name@nvidia.com"; input.setAttribute("aria-label", "Work email"); input.autocomplete = "email";
-    go.type = "submit"; form.appendChild(input); form.appendChild(go);
+    var error = el("div", "msg"); error.id = "emailError"; error.setAttribute("role", "alert");
+    input.type = "email"; input.required = true; input.placeholder = "name@nvidia.com";
+    input.setAttribute("aria-label", "NVIDIA email"); input.setAttribute("aria-describedby", "emailError"); input.autocomplete = "email";
+    go.type = "submit"; form.append(input, go);
     form.addEventListener("submit", function (e) {
-      e.preventDefault(); EMAIL = input.value.trim();
+      e.preventDefault();
+      if (!Policy.validEmail(input.value)) {
+        error.textContent = "Enter an email ending in @nvidia.com.";
+        input.setAttribute("aria-invalid", "true"); input.focus(); return;
+      }
+      EMAIL = Policy.normalize(input.value); term = ""; q.value = "";
       try { localStorage.setItem("ipl-email", EMAIL); } catch (x) {}
       render();
     });
-    main.appendChild(form); input.focus();
+    main.append(form, error); input.focus();
   }
-
+  function drawIdentity() {
+    var who = $("who"); who.replaceChildren();
+    var row = ACCESS.find(function (a) { return Policy.normalize(a.email) === EMAIL; });
+    var name = Policy.isOwner(EMAIL) ? "Yousef Mahajna" : (row && row.name);
+    who.appendChild(document.createTextNode((name ? name + " · " : "") + "Email selected: " + EMAIL + " · "));
+    var change = el("button", "link", "Change email"); change.type = "button";
+    change.addEventListener("click", function () {
+      if (!canLeave()) return;
+      clearDraft(); EMAIL = ""; term = ""; q.value = "";
+      try { localStorage.removeItem("ipl-email"); } catch (e) {}
+      render();
+    }); who.appendChild(change);
+  }
+  function addTile(p, action) {
+    var cell = el("div", "cell");
+    var node = action ? el("button", "item") : p.url ? el("a", "item") : el("div", "item off");
+    if (action) { node.type = "button"; node.addEventListener("click", action); node.setAttribute("aria-controls", "panel"); }
+    else if (p.url) { node.href = p.url; node.target = "_blank"; node.rel = "noopener noreferrer"; }
+    var disc = el("span", "disc");
+    if (p.url || action) disc.style.background = p.color || "#4338CA";
+    disc.appendChild(icon(p.icon, (p.url || action) ? "#FFFFFF" : null));
+    node.append(disc, el("span", "name", p.title), el("span", "tag", action ? "Application permissions" : p.url ? (p.group || "") : "Link needed"));
+    node.appendChild(el("span", "role", Policy.LEVELS[action ? "admin" : levelFor(p)]));
+    if (!action && p.url && p.repo && STAMPS[p.repo]) {
+      var date = new Date(STAMPS[p.repo]);
+      if (!Number.isNaN(date.getTime())) node.appendChild(el("span", "stamp", "Updated " + fmt.format(date)));
+    }
+    cell.appendChild(node); main.appendChild(cell);
+  }
   function render() {
-    var who = $("who"), manage = $("manage"), panel = $("panel");
-    who.innerHTML = ""; manage.hidden = true; panel.hidden = true; $("searchBox").hidden = true;
+    $("who").replaceChildren(); $("panel").hidden = true; $("searchBox").hidden = true;
+    $("accessNotice").hidden = true; main.hidden = false;
     if (!DATA) return;
-    if (!ACCESS) { showMessage("platforms.json has no access list yet. Upload the new platforms.json to the repo."); return; }
-    if (!EMAIL) { signIn(); return; }
-    who.appendChild(document.createTextNode("Signed in as " + EMAIL + " \u00B7 "));
-    var ch = el("button", "link", "Change"); ch.type = "button";
-    ch.addEventListener("click", function () { EMAIL = ""; try { localStorage.removeItem("ipl-email"); } catch (e) {} render(); });
-    who.appendChild(ch);
-
+    if (!EMAIL || !Policy.validEmail(EMAIL)) { EMAIL = ""; signIn(); return; }
+    drawIdentity(); $("accessNotice").hidden = false;
+    if (usersOpen && Policy.isOwner(EMAIL)) { main.hidden = true; $("panel").hidden = false; return; }
     var allowed = PLATFORMS.filter(function (p) { return levelFor(p); });
-    if (!allowed.length) { showMessage("No access is listed for " + EMAIL + ". Ask ymahajna@nvidia.com to add you."); return; }
+    if (!allowed.length && !Policy.isOwner(EMAIL)) { showMessage("No application access is listed for " + EMAIL + ". Ask ymahajna@nvidia.com to add you."); return; }
     $("searchBox").hidden = false;
-    if (isManager()) manage.hidden = false;
-
-    var items = allowed.filter(function (p) { return !term || (p.title + " " + (p.group || "")).toLowerCase().indexOf(term) !== -1; });
-    if (!items.length) { showMessage("No platform matches \u201C" + q.value.trim() + "\u201D. Try a different word."); return; }
-    main.className = "card dock"; main.innerHTML = "";
-    items.forEach(function (p) {
-      var cell = el("div", "cell");
-      var node = p.url ? el("a", "item") : el("div", "item off");
-      if (p.url) { node.href = p.url; node.target = "_blank"; node.rel = "noopener noreferrer"; }
-      var disc = el("span", "disc");
-      if (p.url) disc.style.background = p.color || "#4338CA";
-      disc.appendChild(icon(p.icon, p.url ? "#FFFFFF" : null));
-      node.appendChild(disc);
-      node.appendChild(el("span", "name", p.title));
-      node.appendChild(el("span", "tag", p.url ? (p.group || "") : "Link needed"));
-      node.appendChild(el("span", "role", LEVEL[levelFor(p)]));
-      if (p.url && p.repo && STAMPS[p.repo]) node.appendChild(el("span", "stamp", "Updated " + fmt.format(new Date(STAMPS[p.repo]))));
-      cell.appendChild(node); main.appendChild(cell);
+    var items = allowed.filter(function (p) { return !term || (p.title + " " + (p.group || "")).toLowerCase().includes(term); });
+    var showUsers = Policy.isOwner(EMAIL) && (!term || "users application permissions".includes(term));
+    main.className = "card dock"; main.replaceChildren();
+    items.forEach(function (p) { addTile(p); });
+    if (showUsers) addTile({ title: "Users", icon: "users", color: "#0F172A" }, openUsers);
+    if (!items.length && !showUsers) showMessage("No application matches “" + q.value.trim() + "”. Try a different word.");
+  }
+  function openUsers() {
+    if (!Policy.isOwner(EMAIL)) return;
+    DRAFT = Policy.editableRows(ACCESS); setDirty(false); drawRows();
+    usersOpen = true; render(); $("usersTitle").focus();
+  }
+  function drawRows() {
+    var body = $("rows"); body.replaceChildren();
+    DRAFT.forEach(function (row, i) {
+      var tr = el("tr"), locked = Policy.isOwner(row.email);
+      ["name", "email"].forEach(function (field) {
+        var td = el("td");
+        if (locked) td.appendChild(el("span", "readonly", row[field]));
+        else {
+          var input = el("input"); input.type = field === "email" ? "email" : "text";
+          input.value = row[field]; input.required = true;
+          input.placeholder = field === "email" ? "name@nvidia.com" : "Full name";
+          input.setAttribute("aria-label", (field === "email" ? "NVIDIA email" : "Name") + ", row " + (i + 1));
+          input.addEventListener("input", function () { row[field] = input.value; setDirty(true); });
+          td.appendChild(input);
+        }
+        tr.appendChild(td);
+      });
+      var appTd = el("td"), levelTd = el("td"), actionTd = el("td");
+      if (locked) {
+        appTd.textContent = "All applications"; levelTd.textContent = "Administrator"; actionTd.textContent = "Owner";
+      } else {
+        var apps = el("select"); apps.setAttribute("aria-label", "Application, row " + (i + 1));
+        [{ id: "*", title: "All applications" }].concat(PLATFORMS).forEach(function (p) { var o = el("option", null, p.title); o.value = p.id; apps.appendChild(o); });
+        apps.value = row.platform;
+        apps.addEventListener("change", function () { row.platform = apps.value; setDirty(true); }); appTd.appendChild(apps);
+        var levels = el("select"); levels.setAttribute("aria-label", "Permission level, row " + (i + 1));
+        ["viewer", "editor", "manager"].forEach(function (k) { var o = el("option", null, Policy.LEVELS[k]); o.value = k; levels.appendChild(o); });
+        levels.value = row.level;
+        levels.addEventListener("change", function () { row.level = levels.value; setDirty(true); }); levelTd.appendChild(levels);
+        var remove = el("button", "rm", "Remove"); remove.type = "button";
+        remove.setAttribute("aria-label", "Remove user permission, row " + (i + 1));
+        remove.addEventListener("click", function () { DRAFT.splice(i, 1); setDirty(true); drawRows(); }); actionTd.appendChild(remove);
+      }
+      tr.append(appTd, levelTd, actionTd); body.appendChild(tr);
     });
   }
+  function exportText() {
+    if (!Policy.isOwner(EMAIL)) throw new Error("Only the Administrator can export the Users list.");
+    var rows = Policy.validate(DRAFT, PLATFORMS.map(function (p) { return p.id; }));
+    return JSON.stringify(Object.assign({}, DATA, { access: rows }), null, 2) + "\n";
+  }
+  function exportError(error) { msg.className = "msg"; msg.textContent = error.message || "The file could not be exported."; }
+  $("copyJson").addEventListener("click", async function () {
+    try {
+      var text = exportText();
+      await navigator.clipboard.writeText(text);
+      msg.className = "msg ok"; msg.textContent = "Copied. Replace platforms.json on GitHub and commit to publish. The live site has not changed yet.";
+    } catch (error) {
+      exportError(error instanceof TypeError ? new Error("Clipboard unavailable. Use Download updated users file instead.") : error);
+    }
+  });
+  $("downloadJson").addEventListener("click", function () {
+    try {
+      var text = exportText(), url = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      var a = el("a"); a.href = url; a.download = "platforms.json"; document.body.appendChild(a); a.click(); a.remove();
+      window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      msg.className = "msg ok"; msg.textContent = "Downloaded. Replace platforms.json on GitHub and commit to publish. The live site has not changed yet.";
+    } catch (error) { exportError(error); }
+  });
+  $("addRow").addEventListener("click", function () {
+    if (!Policy.isOwner(EMAIL)) return;
+    DRAFT.push({ name: "", email: "", platform: PLATFORMS.length ? PLATFORMS[0].id : "*", level: "viewer" });
+    setDirty(true); drawRows(); $("rows").lastElementChild.querySelector("input").focus();
+  });
+  $("back").addEventListener("click", function () { if (canLeave()) { clearDraft(); render(); q.focus(); } });
   q.addEventListener("input", function () { term = q.value.trim().toLowerCase(); render(); });
-
-  /* Last update of each platform repo, read from GitHub. Cached for 10 minutes. */
+  window.addEventListener("beforeunload", function (e) { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
   function loadStamps() {
     var cache = {};
-    try { cache = JSON.parse(sessionStorage.getItem("ipl-stamps") || "{}"); } catch (e) { cache = {}; }
+    try { cache = JSON.parse(sessionStorage.getItem("ipl-stamps") || "{}") || {}; } catch (e) {}
     PLATFORMS.forEach(function (p) {
       if (!p.url || !p.repo) return;
       var c = cache[p.repo];
       if (c && Date.now() - c.t < 600000) { STAMPS[p.repo] = c.d; return; }
       fetch("https://api.github.com/repos/" + encodeURIComponent(CFG.owner) + "/" + encodeURIComponent(p.repo))
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (d) {
+        .then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
           if (!d || !d.pushed_at) return;
           STAMPS[p.repo] = d.pushed_at; cache[p.repo] = { t: Date.now(), d: d.pushed_at };
           try { sessionStorage.setItem("ipl-stamps", JSON.stringify(cache)); } catch (e) {}
-          render();
+          // Background updates must not redraw an open, edited Users table.
+          if (!usersOpen) render();
         }).catch(function () {});
     });
   }
-
-  /* Manager: edit the access list (email, platform, access level) */
-  function cleanDraft() {
-    return DRAFT.map(function (r) { return { email: r.email.trim(), platform: r.platform, level: r.level }; })
-                .filter(function (r) { return r.email; });
-  }
-  function drawRows() {
-    var body = $("rows"); body.innerHTML = "";
-    DRAFT.forEach(function (row, i) {
-      var tr = el("tr");
-      var a = el("td"), ei = el("input"); ei.type = "email"; ei.value = row.email; ei.placeholder = "name@nvidia.com"; ei.setAttribute("aria-label", "Email");
-      ei.addEventListener("input", function () { row.email = ei.value; }); a.appendChild(ei);
-      var b = el("td"), ps = el("select"); ps.setAttribute("aria-label", "Platform");
-      var all = el("option", null, "All platforms"); all.value = "*"; ps.appendChild(all);
-      PLATFORMS.forEach(function (p) { var o = el("option", null, p.title); o.value = p.id; ps.appendChild(o); });
-      ps.value = row.platform; ps.addEventListener("change", function () { row.platform = ps.value; }); b.appendChild(ps);
-      var c = el("td"), ls = el("select"); ls.setAttribute("aria-label", "Access level");
-      ["viewer", "editor", "manager"].forEach(function (k) { var o = el("option", null, LEVEL[k]); o.value = k; ls.appendChild(o); });
-      ls.value = row.level; ls.addEventListener("change", function () { row.level = ls.value; }); c.appendChild(ls);
-      var d = el("td"), rm = el("button", "rm", "Remove"); rm.type = "button";
-      rm.addEventListener("click", function () { DRAFT.splice(i, 1); drawRows(); });
-      d.appendChild(rm);
-      tr.appendChild(a); tr.appendChild(b); tr.appendChild(c); tr.appendChild(d); body.appendChild(tr);
-    });
-  }
-  $("manage").addEventListener("click", function () {
-    var open = $("panel").hidden;
-    $("panel").hidden = !open; $("manage").setAttribute("aria-expanded", open);
-    $("manage").textContent = open ? "Hide access" : "Manage access";
-    if (open) {
-      DRAFT = (ACCESS || []).map(function (a) { return { email: a.email, platform: a.platform, level: a.level }; });
-      msg.textContent = ""; drawRows();
-      $("editLink").href = "https://github.com/" + CFG.owner + "/" + CFG.hubRepo + "/edit/main/platforms.json";
-      $("panel").scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  });
-  $("addRow").addEventListener("click", function () { DRAFT.push({ email: "", platform: "*", level: "viewer" }); drawRows(); });
-  $("copyJson").addEventListener("click", function () {
-    var rows = cleanDraft();
-    for (var i = 0; i < rows.length; i++) { if (rows[i].email.indexOf("@") < 1) { msg.className = "msg"; msg.textContent = "Check the email in row " + (i + 1) + "."; return; } }
-    if (!rows.some(function (r) { return r.platform === "*" && r.level === "manager"; })) { msg.className = "msg"; msg.textContent = "Keep at least one manager for All platforms, or no one will be able to manage access."; return; }
-    var out = { github: DATA.github || CFG, platforms: DATA.platforms, access: rows };
-    var text = JSON.stringify(out, null, 2) + "\n";
-    var done = function () { msg.className = "msg ok"; msg.textContent = "Copied. Now open platforms.json on GitHub, replace everything and commit."; };
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { msg.className = "msg"; msg.textContent = "Copy was blocked by the browser."; });
-    else { var ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); done(); } catch (e) {} ta.remove(); }
-  });
-
-  fetch("platforms.json", { cache: "no-store" })
-    .then(function (r) { if (!r.ok) throw new Error("bad"); return r.json(); })
-    .then(function (d) {
-      DATA = d; PLATFORMS = d.platforms || []; ACCESS = Array.isArray(d.access) ? d.access : null;
-      if (d.github) CFG = d.github;
-      render(); loadStamps();
-    })
-    .catch(function () { DATA = null; showMessage("Could not load platforms.json. Open this page from its GitHub Pages link, not as a local file."); });
+  fetch("platforms.json", { cache: "no-store" }).then(function (r) {
+    if (!r.ok) throw new Error("Could not load platforms.json."); return r.json();
+  }).then(function (d) {
+    if (!Array.isArray(d.platforms) || !Array.isArray(d.access)) throw new Error("The applications or users list is missing.");
+    DATA = d; PLATFORMS = d.platforms; ACCESS = d.access;
+    if (d.github) CFG = d.github;
+    render(); loadStamps();
+  }).catch(function (e) { DATA = null; showMessage(e.message + " Reload the page or contact the Administrator."); });
 })();
 </script>
 </body>
 </html>
+
