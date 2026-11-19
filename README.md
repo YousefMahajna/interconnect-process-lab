@@ -70,6 +70,12 @@ Copy and Download remain backup options; they do not save changes. Unsaved edits
 
 The browser verifies that the token belongs to the fixed YousefMahajna GitHub account before saving. Tokens are sent only to `api.github.com` in authorization headers, never stored in local/session storage or repository files, and cleared from the input after a save attempt or leaving Users. Enter tokens only in the website, never in chat. A token can be revoked in GitHub settings. Repository rules must permit updates to `main` for direct saves; if not, the page shows an error and retains the edits.
 
+### Browser draft recovery
+
+Unfinished Users edits are automatically kept on the current browser under `ipl-users-draft-v1`. Refreshing the page, returning from the application list, or deploying a new revision does not discard that draft. Reopen Users to recover it. The editor clearly distinguishes a browser draft from a confirmed shared GitHub save. Browser drafts never affect the actual application list for any visitor.
+
+Recovery combines the draft with newer saved entries using the original list as a baseline. It preserves unrelated changes and requires an explicit choice when both versions changed the same entry. Editing is paused until conflicts are resolved. **Discard draft** explicitly deletes the browser draft after confirmation; a successful shared save also removes it. Only grant fields are stored, never the GitHub token. Incomplete rows are preserved for correction. If browser storage is unavailable, the page tells the user to save or export before refreshing.
+
 GitHub API documentation: [updating file contents](https://docs.github.com/en/rest/repos/contents#create-or-update-file-contents) and [fine-grained tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 
 ### Security status and required next step
