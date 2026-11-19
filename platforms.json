@@ -206,6 +206,30 @@
       "email": "olegm@nvidia.com",
       "platform": "recipes",
       "level": "editor"
+    },
+    {
+      "name": "Algom",
+      "email": "ahalachmi@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
+    },
+    {
+      "name": "Naseem",
+      "email": "naseemh@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
+    },
+    {
+      "name": "Nimrod",
+      "email": "nfeather@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
+    },
+    {
+      "name": "Nuphar",
+      "email": "nbiancostein@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
     }
   ]
 }
