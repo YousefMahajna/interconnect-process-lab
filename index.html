@@ -97,15 +97,61 @@ button:disabled { opacity: .55; cursor: wait; }
 table { min-width: 900px; }
 th:first-child { width: 20%; }
 th:nth-child(2) { width: 28%; }
+
+.sitebar { max-width: 1280px; margin: auto; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.brand-home { display: inline-flex; align-items: center; gap: 12px; border: 0; background: transparent; color: var(--ink); font: inherit; font-weight: 700; text-align: left; cursor: pointer; }
+.brand-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 13px; background: var(--ink); color: var(--surface); font-size: 13px; letter-spacing: -.03em; flex: none; }
+.account { margin-left: auto; }
+.account-profile { display: flex; align-items: center; gap: 12px; text-align: left; flex-wrap: wrap; justify-content: flex-end; }
+.account-avatar { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; color: var(--ink); background: var(--surface); border: 1px solid var(--line); font-weight: 700; flex: none; }
+.account-text { display: flex; flex-direction: column; max-width: 290px; overflow-wrap: anywhere; font-size: 14px; }
+.account-text span { color: var(--muted); font-size: 12px; }
+.account-profile .btn { height: 38px; padding: 0 15px; font-size: 13px; }
+.auth-panel { width: calc(100% - 64px); max-width: 720px; margin: 0 auto 24px; text-align: center; padding: 28px; }
+.auth-panel .msg { margin: 0; }
+.auth-panel .acts { justify-content: center; }
+.page { padding-top: 20px; }
+.item.locked .disc { background: var(--line); }
+.item.locked .disc svg { stroke: var(--muted); }
+.item.locked .name { color: var(--muted); }
+.role.denied { color: var(--muted); border-style: dashed; }
+button.item:hover .disc { transform: scale(1.04); }
+@media (max-width: 620px) {
+  .sitebar { padding: 16px 18px; align-items: flex-start; flex-wrap: wrap; gap: 14px; }
+  .brand-home { font-size: 14px; }
+  .account-profile { gap: 8px; max-width: 100%; }
+  .account-text { max-width: 200px; }
+  .account-avatar { width: 34px; height: 34px; }
+  .account { max-width: 100%; }
+  .auth-panel { width: calc(100% - 36px); padding: 22px 16px; }
+}
 </style>
 </head>
 <body>
+<header class="sitebar">
+  <button id="homeButton" type="button" class="brand-home" aria-label="Process Lab main page"><span class="brand-icon" aria-hidden="true">IPL</span><span>Process Lab</span></button>
+  <div class="account">
+    <button id="signInButton" class="btn" type="button" aria-controls="signInPanel" aria-expanded="false">Sign in</button>
+    <div id="who" class="account-profile" hidden aria-label="Current user"></div>
+  </div>
+</header>
+<section class="card gate auth-panel" id="signInPanel" hidden aria-labelledby="signInTitle">
+  <h2 id="signInTitle">Sign in with your NVIDIA email</h2>
+  <p>Your name and application levels come from the Users list.</p>
+  <form id="emailForm">
+    <input id="emailInput" type="email" required placeholder="name@nvidia.com" aria-label="NVIDIA email" aria-describedby="emailError lookupStatus" autocomplete="email">
+    <button class="btn" type="submit">Continue</button>
+  </form>
+  <p id="lookupStatus" class="note" role="status"></p>
+  <div id="emailError" class="msg" role="alert"></div>
+  <p class="note">Email selection only. NVIDIA mailbox ownership is not verified yet.</p>
+  <button id="cancelSignIn" class="btn ghost" type="button">Cancel</button>
+</section>
 <div class="page">
   <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5"/><circle cx="19" cy="6" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M7.5 12h4c2 0 2-6 5-6M11.5 12c3 0 3 6 5 6"/></svg></div>
   <div>
     <h1>Interconnect Process Lab</h1>
-    <p class="sub">Every lab platform in one place. Choose your NVIDIA email to see your application list.</p>
-    <div class="who" id="who"></div>
+    <p class="sub" id="catalogSubtitle">Every lab platform in one place. Sign in above to see your access level for each application.</p>
   </div>
   <label class="search" id="searchBox" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
@@ -254,52 +300,82 @@ th:nth-child(2) { width: 28%; }
   }
   function clearDraft() { dirty = false; DRAFT = []; usersOpen = false; $("githubToken").value = ""; }
   function canLeave() { return !saving; }
-  function signIn() {
-    main.className = "card gate"; main.replaceChildren();
-    main.appendChild(el("h2", null, "Enter your NVIDIA email"));
-    main.appendChild(el("p", null, "Use your @nvidia.com email to select your application list."));
-    main.appendChild(el("p", "note", "Email selection only. Mailbox verification is not connected yet."));
-    var form = el("form"), input = el("input"), go = el("button", "btn", "Continue");
-    var error = el("div", "msg"); error.id = "emailError"; error.setAttribute("role", "alert");
-    input.type = "email"; input.required = true; input.placeholder = "name@nvidia.com";
-    input.setAttribute("aria-label", "NVIDIA email"); input.setAttribute("aria-describedby", "emailError"); input.autocomplete = "email";
-    go.type = "submit"; form.append(input, go);
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      if (!Policy.validEmail(input.value)) {
-        error.textContent = "Enter an email ending in @nvidia.com.";
-        input.setAttribute("aria-invalid", "true"); input.focus(); return;
-      }
-      EMAIL = Policy.normalize(input.value); term = ""; q.value = "";
-      try { localStorage.setItem("ipl-email", EMAIL); } catch (x) {}
-      render();
-    });
-    main.append(form, error); input.focus();
+
+  function nameFor(email) {
+    if (Policy.isOwner(email)) return Policy.ownerRow().name;
+    var row = ACCESS.find(function (a) { return Policy.normalize(a.email) === Policy.normalize(email); });
+    return row && String(row.name || "").trim() || null;
   }
+  function previewName() {
+    var email = Policy.normalize($("emailInput").value);
+    $("emailError").textContent = ""; $("emailInput").removeAttribute("aria-invalid");
+    if (!email) { $("lookupStatus").textContent = ""; return; }
+    if (!Policy.validEmail(email)) { $("lookupStatus").textContent = "Use an email ending in @nvidia.com."; return; }
+    var name = nameFor(email);
+    $("lookupStatus").textContent = name ? "Name: " + name : "Name not listed. General NVIDIA permissions will apply.";
+  }
+  function openSignIn() {
+    if (saving) return;
+    $("signInPanel").hidden = false; $("signInButton").setAttribute("aria-expanded", "true");
+    $("emailInput").value = EMAIL; previewName(); $("emailInput").focus();
+  }
+  function closeSignIn() {
+    $("signInPanel").hidden = true; $("signInButton").setAttribute("aria-expanded", "false");
+    $("emailError").textContent = "";
+  }
+  $("signInButton").addEventListener("click", openSignIn);
+  $("cancelSignIn").addEventListener("click", function () { closeSignIn(); var target = EMAIL && $("who").querySelector("button") || $("signInButton"); target.focus(); });
+  $("emailInput").addEventListener("input", previewName);
+  $("emailForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!DATA) { $("emailError").textContent = "The Users list is still loading. Please try again."; return; }
+    if (!Policy.validEmail($("emailInput").value)) {
+      $("emailError").textContent = "Enter an email ending in @nvidia.com.";
+      $("emailInput").setAttribute("aria-invalid", "true"); $("emailInput").focus(); return;
+    }
+    var next = Policy.normalize($("emailInput").value);
+    if (next !== EMAIL) { Store.disconnect(); updateConnectionUI(); $("saveSetup").hidden = true; }
+    clearDraft(); EMAIL = next; term = ""; q.value = "";
+    try { localStorage.setItem("ipl-email", EMAIL); } catch (error) {}
+    closeSignIn(); render();
+  });
+  function signOut() {
+    if (!canLeave()) return;
+    Store.disconnect(); updateConnectionUI(); $("saveSetup").hidden = true;
+    clearDraft(); EMAIL = ""; term = ""; q.value = "";
+    try { localStorage.removeItem("ipl-email"); } catch (error) {}
+    closeSignIn(); render();
+  }
+  $("homeButton").addEventListener("click", function () { if (canLeave()) { clearDraft(); closeSignIn(); render(); } });
   function drawIdentity() {
-    var who = $("who"); who.replaceChildren();
-    var row = ACCESS.find(function (a) { return Policy.normalize(a.email) === EMAIL; });
-    var name = Policy.isOwner(EMAIL) ? "Yousef Mahajna" : (row && row.name);
-    who.appendChild(document.createTextNode((name ? name + " · " : "") + "Email selected: " + EMAIL + " · "));
-    var change = el("button", "link", "Change email"); change.type = "button";
-    change.addEventListener("click", function () {
-      if (!canLeave()) return;
-      Store.disconnect(); updateConnectionUI(); $("saveSetup").hidden = true;
-      clearDraft(); EMAIL = ""; term = ""; q.value = "";
-      try { localStorage.removeItem("ipl-email"); } catch (e) {}
-      render();
-    }); who.appendChild(change);
+    var who = $("who"); who.replaceChildren(); who.hidden = !EMAIL; $("signInButton").hidden = Boolean(EMAIL);
+    $("catalogSubtitle").textContent = EMAIL ? "Every lab platform in one place. Your access level is shown for each application." : "Every lab platform in one place. Sign in above to see your access level for each application.";
+    if (!EMAIL) return;
+    var name = nameFor(EMAIL), avatar = el("span", "account-avatar", name ? name.split(/\s+/).slice(0, 2).map(function (s) { return s[0]; }).join("").toUpperCase() : "NV");
+    avatar.setAttribute("aria-hidden", "true");
+    var identity = el("span", "account-text");
+    identity.append(el("strong", null, name || "NVIDIA user"), el("span", null, EMAIL));
+    var change = el("button", "btn ghost", "Change email"); change.type = "button"; change.addEventListener("click", openSignIn);
+    var out = el("button", "btn ghost", "Sign out"); out.type = "button"; out.addEventListener("click", signOut);
+    who.append(avatar, identity, change, out);
   }
   function addTile(p, action) {
-    var cell = el("div", "cell");
-    var node = action ? el("button", "item") : p.url ? el("a", "item") : el("div", "item off");
-    if (action) { node.type = "button"; node.addEventListener("click", action); node.setAttribute("aria-controls", "panel"); }
-    else if (p.url) { node.href = p.url; node.target = "_blank"; node.rel = "noopener noreferrer"; }
+    var cell = el("div", "cell"), selected = Boolean(EMAIL);
+    var level = action ? (Policy.isOwner(EMAIL) ? "admin" : null) : selected ? levelFor(p) : null;
+    var allowed = Boolean(level), entryAction = !selected ? openSignIn : action && allowed ? action : null;
+    var opensLink = selected && allowed && Boolean(p.url);
+    var cls = "item" + (selected && !allowed ? " locked" : "") + (!p.url && !action ? " off" : "");
+    var node = entryAction ? el("button", cls) : opensLink ? el("a", cls) : el("div", cls);
+    if (entryAction) { node.type = "button"; node.addEventListener("click", entryAction); node.setAttribute("aria-controls", selected ? "panel" : "signInPanel"); }
+    else if (opensLink) { node.href = p.url; node.target = "_blank"; node.rel = "noopener noreferrer"; }
+    else if (selected && !allowed) node.setAttribute("aria-disabled", "true");
+    if (!selected) node.setAttribute("aria-label", "Sign in to open " + p.title);
     var disc = el("span", "disc");
-    if (p.url || action) disc.style.background = p.color || "#4338CA";
-    disc.appendChild(icon(p.icon, (p.url || action) ? "#FFFFFF" : null));
-    node.append(disc, el("span", "name", p.title), el("span", "tag", action ? "Application permissions" : p.url ? (p.group || "") : "Link needed"));
-    node.appendChild(el("span", "role", Policy.LEVELS[action ? "admin" : levelFor(p)]));
+    if ((p.url || action) && (!selected || allowed)) disc.style.background = p.color || "#4338CA";
+    disc.appendChild(icon(p.icon, selected && !allowed ? null : (p.url || action) ? "#FFFFFF" : null));
+    var tag = !selected ? "Sign in to open" : !allowed ? "Locked" : action ? "Application permissions" : p.url ? (p.group || "") : "Link needed";
+    node.append(disc, el("span", "name", p.title), el("span", "tag", tag));
+    node.appendChild(el("span", "role" + (selected && !allowed ? " denied" : ""), !selected ? "Sign in" : level ? Policy.LEVELS[level] : "No access"));
     if (!action && p.url && p.repo && STAMPS[p.repo]) {
       var date = new Date(STAMPS[p.repo]);
       if (!Number.isNaN(date.getTime())) node.appendChild(el("span", "stamp", "Updated " + fmt.format(date)));
@@ -307,21 +383,23 @@ th:nth-child(2) { width: 28%; }
     cell.appendChild(node); main.appendChild(cell);
   }
   function render() {
-    $("who").replaceChildren(); $("panel").hidden = true; $("searchBox").hidden = true;
-    $("accessNotice").hidden = true; main.hidden = false;
+    $("panel").hidden = true; $("searchBox").hidden = true; $("accessNotice").hidden = true; main.hidden = false;
+    if (EMAIL && !Policy.validEmail(EMAIL)) EMAIL = "";
+    drawIdentity();
     if (!DATA) return;
-    if (!EMAIL || !Policy.validEmail(EMAIL)) { EMAIL = ""; signIn(); return; }
-    drawIdentity(); $("accessNotice").hidden = false;
+    $("accessNotice").hidden = false;
+    $("accessNotice").textContent = EMAIL
+      ? "Everyone sees the same application catalog. Your levels come from the Users list. Email ownership is not verified; destination applications still need their own access enforcement."
+      : "Sign in above with your NVIDIA email to see your name and access levels. Applications open according to your listed permissions.";
     if (usersOpen && Policy.isOwner(EMAIL)) { main.hidden = true; $("panel").hidden = false; return; }
-    var allowed = PLATFORMS.filter(function (p) { return levelFor(p); });
-    if (!allowed.length && !Policy.isOwner(EMAIL)) { showMessage("No application access is listed for " + EMAIL + ". Ask ymahajna@nvidia.com to add you."); return; }
     $("searchBox").hidden = false;
-    var items = allowed.filter(function (p) { return !term || (p.title + " " + (p.group || "")).toLowerCase().includes(term); });
-    var showUsers = Policy.isOwner(EMAIL) && (!term || "users application permissions".includes(term));
+    var items = PLATFORMS.filter(function (p) { return !term || (p.title + " " + (p.group || "")).toLowerCase().includes(term); });
+    var showUsers = !term || "users application permissions".includes(term);
     main.className = "card dock"; main.replaceChildren();
     items.forEach(function (p) { addTile(p); });
-    if (showUsers) addTile({ title: "Users", icon: "users", color: "#0F172A" }, openUsers);
+    if (showUsers) addTile({ id: "users", title: "Users", icon: "users", color: "#0F172A" }, openUsers);
     if (!items.length && !showUsers) showMessage("No application matches “" + q.value.trim() + "”. Try a different word.");
+    if (!$("signInPanel").hidden) previewName();
   }
   function openUsers() {
     if (!Policy.isOwner(EMAIL)) return;
