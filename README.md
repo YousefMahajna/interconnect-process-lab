@@ -47,7 +47,7 @@ X-Section has no link yet. Put `xsection-lab.html` in its own repo as `index.htm
 
 ## Users and application levels
 
-The Administrator sees a **Users** circle alongside the applications. The Users screen has one row per user and application: name, NVIDIA email, application, and permission level.
+The Administrator sees a **Users** circle alongside the applications. The Users screen has one row per user and application: name, NVIDIA email, application, and permission level. Search listed users by name or email (case insensitive); the result count refers to permission rows. Filtering does not change the saved data or the rows included in exports and shared saves. Adding a row clears the search so the new row is visible.
 
 - Viewer: view information.
 - Editor: view and edit information.
@@ -56,7 +56,7 @@ The Administrator sees a **Users** circle alongside the applications. The Users 
 
 Yousef Mahajna (`ymahajna@nvidia.com`) is the reserved Administrator for all applications. His entry cannot be removed, renamed, or downgraded in the editor. Other users can have different levels for different applications, or a level for All applications. If grants overlap, the highest level applies.
 
-The email selector accepts only the exact `@nvidia.com` domain (case insensitive). Unlisted users see no applications. This is presentation behavior, not authentication.
+The email selector accepts only the exact `@nvidia.com` domain (case insensitive). Every NVIDIA email, including unlisted users, receives default Viewer access to Adhesive Inventory (`adhesives`), Lab Activities (`activities`), and Process Recipe Library (`recipes`). Explicit Editor/Manager permissions take precedence and the owner remains Administrator. Practical Engineers and X-Section still require explicit grants. Removing an explicit entry does not revoke the three default Viewer applications. This is hub presentation behavior, not authentication or enforcement within a destination application.
 
 ### Publish Users changes
 
