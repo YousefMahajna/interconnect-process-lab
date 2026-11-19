@@ -47,6 +47,10 @@ X-Section has no link yet. Put `xsection-lab.html` in its own repo as `index.htm
 
 ## Users and application levels
 
+The top account bar provides Sign in, Change email, and Sign out. Enter a NVIDIA email to select its existing Users-list identity; known names appear automatically while typing and in the header. Unlisted valid NVIDIA emails display as "NVIDIA user" and follow the general rules. Names are not guessed from email addresses or looked up in a company directory. This remains unverified email selection, not corporate authentication.
+
+Everyone sees the same application catalog, including signed-out visitors. Signed-out circles open the top sign-in form. After email selection, each circle shows that person's level. Applications with No access and the Users circle for non-administrators stay visible but locked, without a destination link or enabled management action. Missing application links remain placeholders. Only the owner can open Users. Changing accounts and signing out disconnect shared GitHub saving and preserve browser drafts for later recovery.
+
 The Administrator sees a **Users** circle alongside the applications. The Users screen has one row per user and application: name, NVIDIA email, application, and permission level. Search listed users by name or email (case insensitive), and combine that search with the Application filter. Selecting an application also includes All applications grants; there is a separate option for only those grants. The result count refers to permission rows. Filtering does not change saved data or the rows included in exports and shared saves. Adding a row clears the text search and uses the selected application so the new row is visible.
 
 - Viewer: view information.
