@@ -56,7 +56,108 @@
       "email": "ymahajna@nvidia.com",
       "platform": "*",
       "level": "admin"
+    },
+    {
+      "name": "Alex",
+      "email": "akelrich@nvidia.com",
+      "platform": "*",
+      "level": "viewer"
+    },
+    {
+      "name": "Samer",
+      "email": "skheir@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
+    },
+    {
+      "name": "Samer",
+      "email": "skheir@nvidia.com",
+      "platform": "activities",
+      "level": "editor"
+    },
+    {
+      "name": "Samer",
+      "email": "skheir@nvidia.com",
+      "platform": "xsection",
+      "level": "editor"
+    },
+    {
+      "name": "Samer",
+      "email": "skheir@nvidia.com",
+      "platform": "recipes",
+      "level": "editor"
+    },
+    {
+      "name": "Amir Diab",
+      "email": "amdiab@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
+    },
+    {
+      "name": "Amir Diab",
+      "email": "amdiab@nvidia.com",
+      "platform": "activities",
+      "level": "editor"
+    },
+    {
+      "name": "Amir Diab",
+      "email": "amdiab@nvidia.com",
+      "platform": "xsection",
+      "level": "editor"
+    },
+    {
+      "name": "Amir Diab",
+      "email": "amdiab@nvidia.com",
+      "platform": "recipes",
+      "level": "editor"
+    },
+    {
+      "name": "Garold",
+      "email": "garold@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
+    },
+    {
+      "name": "Garold",
+      "email": "garold@nvidia.com",
+      "platform": "activities",
+      "level": "editor"
+    },
+    {
+      "name": "Garold",
+      "email": "garold@nvidia.com",
+      "platform": "xsection",
+      "level": "editor"
+    },
+    {
+      "name": "Garold",
+      "email": "garold@nvidia.com",
+      "platform": "recipes",
+      "level": "editor"
+    },
+    {
+      "name": "Michael",
+      "email": "michaelsk@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
+    },
+    {
+      "name": "Michael",
+      "email": "michaelsk@nvidia.com",
+      "platform": "activities",
+      "level": "editor"
+    },
+    {
+      "name": "Michael",
+      "email": "michaelsk@nvidia.com",
+      "platform": "xsection",
+      "level": "editor"
+    },
+    {
+      "name": "Michael",
+      "email": "michaelsk@nvidia.com",
+      "platform": "recipes",
+      "level": "editor"
     }
   ]
 }
-
