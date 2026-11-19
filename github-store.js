@@ -24,6 +24,7 @@
     }).sort());
   }
   function create(fetcher, policy) {
+    var activeToken = '';
     async function request(url, token, options) {
       var headers = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
       if (token) headers.Authorization = 'Bearer ' + token;
@@ -37,8 +38,10 @@
           : 'Could not reach GitHub. Check your connection and try again.');
       }
       if (!response.ok) {
-        if (response.status === 401) throw new Error('GitHub did not accept this token. Create a valid token and try again.');
-        if (response.status === 403 || response.status === 404) throw new Error('GitHub access was denied. The token needs Contents: Read and write for interconnect-process-lab, and must belong to YousefMahajna. Repository rules may also block direct saves.');
+        if (response.status === 401 || response.status === 403 || response.status === 404) {
+          var error = new Error(response.status === 401 ? 'GitHub did not accept this token. Connect GitHub again with a valid token.' : 'GitHub access was denied. Connect with a token that has Contents: Read and write for interconnect-process-lab under YousefMahajna. Repository rules may also block direct saves.');
+          error.status = response.status; throw error;
+        }
         if (response.status === 409 || response.status === 422) throw new Error('GitHub could not apply this update. Keep a copy of your edits and reload the list before trying again.');
         throw new Error('GitHub returned an error (' + response.status + '). Your edits are still on this screen.');
       }
@@ -49,8 +52,25 @@
       if (file.encoding !== 'base64' || typeof file.content !== 'string' || !file.sha) throw new Error('GitHub returned an unreadable users file.');
       return { data: validData(JSON.parse(decode(file.content))), sha: file.sha };
     }
-    return {
+    var api = {
       load: async function () { return (await read('')).data; },
+      connect: async function (token) {
+        activeToken = '';
+        token = String(token || '').trim();
+        if (!token) throw new Error('Enter a GitHub token to connect.');
+        var identity = await request('https://api.github.com/user', token);
+        if (identity.id !== OWNER_ID || String(identity.login).toLowerCase() !== 'yousefmahajna') throw new Error('Only the YousefMahajna GitHub account can save the Users list.');
+        await read(token);
+        activeToken = token;
+        return { login: identity.login };
+      },
+      disconnect: function () { activeToken = ''; },
+      isConnected: function () { return Boolean(activeToken); },
+      saveConnected: async function (baseline, draft) {
+        if (!activeToken) throw new Error('Connect GitHub before saving changes for everyone. Your browser draft is kept.');
+        try { return await api.save(activeToken, baseline, draft); }
+        catch (error) { if ([401, 403, 404].indexOf(error.status) !== -1) activeToken = ''; throw error; }
+      },
       save: async function (token, baselineAccess, draft) {
         if (!token || !token.trim()) throw new Error('Enter a GitHub token in Save setup to save the shared Users list.');
         token = token.trim();
@@ -68,6 +88,7 @@
         return { data: updated, commitSha: result.commit.sha };
       }
     };
+    return api;
   }
   var api = { create: create };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

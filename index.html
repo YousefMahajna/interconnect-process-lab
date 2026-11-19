@@ -92,6 +92,8 @@ button.item { background: none; border: 0; padding: 0; font: inherit; cursor: po
 .save-setup input { display: block; width: 100%; max-width: 540px; margin-top: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); font: inherit; }
 .save-setup a { color: var(--ink); }
 button:disabled { opacity: .55; cursor: wait; }
+.application-filter { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.application-filter select { height: 48px; max-width: 100%; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; }
 table { min-width: 900px; }
 th:first-child { width: 20%; }
 th:nth-child(2) { width: 28%; }
@@ -124,10 +126,11 @@ th:nth-child(2) { width: 28%; }
       <label class="search">
         <input id="usersSearch" type="search" placeholder="Search users by name or email" aria-label="Search users by name or email" autocomplete="off" aria-controls="rows" aria-describedby="usersSearchCount">
       </label>
-      <button class="btn ghost" id="clearUsersSearch" type="button">Clear search</button>
+      <label class="application-filter">Application <select id="usersApplication" aria-label="Filter users by application" aria-controls="rows"></select></label>
+      <button class="btn ghost" id="clearUsersSearch" type="button">Clear filters</button>
     </div>
     <div id="usersSearchCount" class="note" role="status"></div>
-    <p id="usersSearchEmpty" hidden>No listed users match this name or email.</p>
+    <p id="usersSearchEmpty" hidden>No listed users match these filters.</p>
     <div class="scroll">
       <table>
         <caption class="note" style="text-align:left;padding:0 10px 12px">Application permissions</caption>
@@ -136,25 +139,32 @@ th:nth-child(2) { width: 28%; }
       </table>
     </div>
     <div class="acts">
+      <button class="btn ghost" id="connectGithub" type="button" aria-controls="saveSetup" aria-expanded="false">Connect GitHub</button>
+      <button class="btn ghost" id="disconnectGithub" type="button" hidden>Disconnect GitHub</button>
+      <span id="connectionStatus" class="note" role="status">Connect GitHub to enable shared saving. Browser drafts are kept automatically.</span>
+    </div>
+    <div class="acts">
       <button class="btn ghost" id="addRow" type="button">Add user / application</button>
-      <button class="btn" id="saveUsers" type="button">Save changes</button>
+      <button class="btn" id="saveUsers" type="button" disabled>Save changes</button>
       <button class="btn ghost" id="discardDraft" type="button">Discard draft</button>
       <button class="btn ghost" id="copyJson" type="button">Copy updated users file</button>
       <button class="btn ghost" id="downloadJson" type="button">Download updated users file</button>
       <a class="btn ghost" id="editLink" target="_blank" rel="noopener noreferrer" href="https://github.com/YousefMahajna/interconnect-process-lab/edit/main/platforms.json">Open file on GitHub</a>
     </div>
-    <details class="save-setup" id="saveSetup">
-      <summary>GitHub save setup</summary>
+    <section class="save-setup" id="saveSetup" hidden aria-label="Connect GitHub for shared saving">
+      <h3>Connect GitHub</h3>
       <p>This is a GitHub access token, not your NVIDIA or GitHub password. It lets this website update the shared Users list. Only your YousefMahajna GitHub account can save.</p>
       <ol>
         <li><a href="https://github.com/settings/personal-access-tokens/new?name=Lab%20Users%20editor&amp;target_name=YousefMahajna&amp;expires_in=30&amp;contents=write" target="_blank" rel="noopener noreferrer">Create a GitHub token</a> for your YousefMahajna account.</li>
         <li>Choose <strong>Only select repositories → interconnect-process-lab</strong>. Set repository permission <strong>Contents → Read and write</strong>, then generate the token.</li>
-        <li>Paste it below, then click <strong>Save changes</strong>. Do not paste it into chat.</li>
+        <li>Paste it below and click <strong>Connect account</strong>. Then you can use Save changes repeatedly while this page stays open. Do not paste it into chat.</li>
       </ol>
       <label for="githubToken">GitHub token</label>
       <input id="githubToken" type="password" placeholder="Paste your repository token here" autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="tokenNote">
-      <p class="note" id="tokenNote">The token is sent only to GitHub, is never saved in browser storage, and is cleared after each save attempt or when leaving Users. This website uses a separate connection from Codex.</p>
-    </details>
+      <p class="note" id="tokenNote">The token is sent only to GitHub and kept in page memory while connected. It is never saved in browser storage. Refreshing, disconnecting, or changing email ends the connection. This is separate from Codex.</p>
+      <button class="btn" id="confirmGithubConnection" type="button">Connect account</button>
+      <button class="btn ghost" id="cancelGithubConnection" type="button">Cancel</button>
+    </section>
     <div id="draftStatus" class="draft-status" role="status">No changes.</div>
     <div id="draftConflict" hidden>
       <p id="conflictText" role="alert"></p>
@@ -257,6 +267,7 @@ th:nth-child(2) { width: 28%; }
     var change = el("button", "link", "Change email"); change.type = "button";
     change.addEventListener("click", function () {
       if (!canLeave()) return;
+      Store.disconnect(); updateConnectionUI(); $("saveSetup").hidden = true;
       clearDraft(); EMAIL = ""; term = ""; q.value = "";
       try { localStorage.removeItem("ipl-email"); } catch (e) {}
       render();
@@ -298,6 +309,7 @@ th:nth-child(2) { width: 28%; }
   function openUsers() {
     if (!Policy.isOwner(EMAIL)) return;
     $("usersSearch").value = "";
+    populateApplicationFilter(""); updateConnectionUI();
     draftBase = structuredClone(ACCESS); recovery = null; draftConflict = false;
     DRAFT = Policy.editableRows(ACCESS); setDirty(false);
     $("draftConflict").hidden = true;
@@ -369,50 +381,79 @@ th:nth-child(2) { width: 28%; }
     filterUsers();
   }
   function filterUsers() {
-    var query = Policy.normalize($("usersSearch").value), count = 0;
+    var query = Policy.normalize($("usersSearch").value), application = $("usersApplication").value, count = 0;
     $("rows").querySelectorAll("tr").forEach(function (tr) {
       var row = DRAFT[Number(tr.dataset.draftIndex)];
-      var match = !query || Policy.normalize(row.name).includes(query) || Policy.normalize(row.email).includes(query);
+      var textMatch = !query || Policy.normalize(row.name).includes(query) || Policy.normalize(row.email).includes(query);
+      var appMatch = !application || row.platform === application || (application !== "*" && row.platform === "*");
+      var match = textMatch && appMatch;
       tr.hidden = !match; if (match) count++;
     });
     $("usersSearchCount").textContent = count + " of " + DRAFT.length + " permission rows shown";
     $("usersSearchEmpty").hidden = count !== 0;
   }
+  function populateApplicationFilter(selected) {
+    var select = $("usersApplication"); select.replaceChildren();
+    [{ id: "", title: "All permission rows" }, { id: "*", title: "All applications grants only" }].concat(PLATFORMS).forEach(function (p) {
+      var option = el("option", null, p.title); option.value = p.id; select.appendChild(option);
+    });
+    select.value = selected; if (select.selectedIndex < 0) select.value = "";
+  }
   $("usersSearch").addEventListener("input", filterUsers);
-  $("clearUsersSearch").addEventListener("click", function () { $("usersSearch").value = ""; filterUsers(); $("usersSearch").focus(); });
+  $("usersApplication").addEventListener("change", filterUsers);
+  $("clearUsersSearch").addEventListener("click", function () { $("usersSearch").value = ""; $("usersApplication").value = ""; filterUsers(); $("usersSearch").focus(); });
   function exportText() {
     if (!Policy.isOwner(EMAIL)) throw new Error("Only the Administrator can export the Users list.");
     var rows = Policy.validate(DRAFT, PLATFORMS.map(function (p) { return p.id; }));
     return JSON.stringify(Object.assign({}, DATA, { access: rows }), null, 2) + "\n";
   }
   function exportError(error) { msg.className = "msg"; msg.textContent = error.message || "The file could not be exported."; }
+  function updateConnectionUI() {
+    var connected = Store.isConnected();
+    $("saveUsers").disabled = saving || !connected;
+    $("connectGithub").hidden = connected; $("disconnectGithub").hidden = !connected;
+    $("connectGithub").setAttribute("aria-expanded", String(!$("saveSetup").hidden));
+    $("connectionStatus").textContent = connected ? "GitHub connected as YousefMahajna. You can save while this page stays open." : "Connect GitHub to enable shared saving. Browser drafts are kept automatically.";
+  }
+  $("connectGithub").addEventListener("click", function () { $("saveSetup").hidden = false; updateConnectionUI(); $("githubToken").focus(); });
+  $("cancelGithubConnection").addEventListener("click", function () { $("githubToken").value = ""; $("saveSetup").hidden = true; updateConnectionUI(); });
+  $("disconnectGithub").addEventListener("click", function () { Store.disconnect(); $("githubToken").value = ""; updateConnectionUI(); });
+  $("confirmGithubConnection").addEventListener("click", async function () {
+    if (saving) return;
+    var token = $("githubToken").value.trim(); $("githubToken").value = "";
+    saving = true; $("confirmGithubConnection").disabled = true; $("confirmGithubConnection").textContent = "Connecting…";
+    $("cancelGithubConnection").disabled = true; $("connectGithub").disabled = true; msg.textContent = "";
+    try {
+      await Store.connect(token);
+      $("saveSetup").hidden = true;
+      msg.className = "msg ok"; msg.textContent = "Connected. Click Save changes to publish your edits.";
+    } catch (error) { exportError(error); }
+    finally {
+      token = ""; saving = false;
+      $("confirmGithubConnection").disabled = false; $("confirmGithubConnection").textContent = "Connect account";
+      $("cancelGithubConnection").disabled = false; $("connectGithub").disabled = false; updateConnectionUI();
+    }
+  });
   $("saveUsers").addEventListener("click", async function () {
     if (saving || !Policy.isOwner(EMAIL)) return;
     if (draftConflict) { exportError(new Error("Choose which conflicting values to keep before saving.")); return; }
-    var token = $("githubToken").value.trim();
-    $("githubToken").value = "";
-    try { exportText(); } catch (error) { token = ""; exportError(error); return; }
-    if (!token) {
-      $("saveSetup").open = true;
-      exportError(new Error("Complete GitHub save setup below, enter the token, then click Save changes."));
-      $("githubToken").focus(); return;
-    }
+    try { exportText(); } catch (error) { exportError(error); return; }
+    if (!Store.isConnected()) { exportError(new Error("Connect GitHub to save for everyone. Your browser draft is kept.")); return; }
     saving = true;
     var controls = Array.from($("panel").querySelectorAll("input,select,button"));
     controls.forEach(function (c) { c.disabled = true; });
     $("saveUsers").textContent = "Saving…"; msg.textContent = "";
     try {
-      var result = await Store.save(token, ACCESS, DRAFT);
+      var result = await Store.saveConnected(ACCESS, DRAFT);
       DATA = result.data; ACCESS = DATA.access; PLATFORMS = DATA.platforms;
       try { if (Drafts) Drafts.clear(); } catch (e) {}
       draftBase = structuredClone(ACCESS); recovery = null;
-      DRAFT = Policy.editableRows(ACCESS); setDirty(false); drawRows();
-      $("saveSetup").open = false;
+      DRAFT = Policy.editableRows(ACCESS); setDirty(false); populateApplicationFilter($("usersApplication").value); drawRows();
       $("draftStatus").textContent = "Saved to GitHub. The shared Users list is up to date.";
       msg.className = "msg ok"; msg.textContent = "Changes saved for everyone.";
     } catch (error) { exportError(error); }
     finally {
-      token = ""; saving = false; controls.forEach(function (c) { c.disabled = false; });
+      saving = false; controls.forEach(function (c) { c.disabled = false; }); updateConnectionUI();
       $("saveUsers").textContent = "Save changes";
     }
   });
@@ -436,7 +477,7 @@ th:nth-child(2) { width: 28%; }
   $("addRow").addEventListener("click", function () {
     if (!Policy.isOwner(EMAIL)) return;
     $("usersSearch").value = "";
-    DRAFT.push({ name: "", email: "", platform: PLATFORMS.length ? PLATFORMS[0].id : "*", level: "viewer" });
+    DRAFT.push({ name: "", email: "", platform: $("usersApplication").value || (PLATFORMS.length ? PLATFORMS[0].id : "*"), level: "viewer" });
     setDirty(true); drawRows(); $("rows").lastElementChild.querySelector("input").focus();
   });
   $("back").addEventListener("click", function () { if (canLeave()) { clearDraft(); render(); q.focus(); } });
