@@ -158,6 +158,30 @@
       "email": "michaelsk@nvidia.com",
       "platform": "recipes",
       "level": "editor"
+    },
+    {
+      "name": "Haytam Masarwi",
+      "email": "hmasarwi@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
+    },
+    {
+      "name": "Haytam Masarwi",
+      "email": "hmasarwi@nvidia.com",
+      "platform": "activities",
+      "level": "editor"
+    },
+    {
+      "name": "Haytam Masarwi",
+      "email": "hmasarwi@nvidia.com",
+      "platform": "xsection",
+      "level": "editor"
+    },
+    {
+      "name": "Haytam Masarwi",
+      "email": "hmasarwi@nvidia.com",
+      "platform": "recipes",
+      "level": "editor"
     }
   ]
 }
