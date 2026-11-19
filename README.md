@@ -47,6 +47,8 @@ X-Section has no link yet. Put `xsection-lab.html` in its own repo as `index.htm
 
 ## Users and application levels
 
+The Adhesive Inventory tile passes only the selected NVIDIA email in a marked URL fragment. Adhesives reads the latest shared permission list and policy itself, then enters directly in Viewer or Editor mode (Editor/Manager/Administrator map to its Editor role). Denied or failed lookups remain blocked. The ordinary Adhesives URL retains its selector. The handoff does not carry a token or trust a role from the URL, and it does not verify mailbox ownership. Saving inventory uses a separate authenticated GitHub connection in Adhesives.
+
 The top account bar provides Sign in, Change email, and Sign out. Enter a NVIDIA email to select its existing Users-list identity; known names appear automatically while typing and in the header. Unlisted valid NVIDIA emails display as "NVIDIA user" and follow the general rules. Names are not guessed from email addresses or looked up in a company directory. This remains unverified email selection, not corporate authentication.
 
 Everyone sees the same application catalog, including signed-out visitors. Signed-out circles open the top sign-in form. After email selection, each circle shows that person's level. Applications with No access and the Users circle for non-administrators stay visible but locked, without a destination link or enabled management action. Missing application links remain placeholders. Only the owner can open Users. Changing accounts and signing out disconnect shared GitHub saving and preserve browser drafts for later recovery.
