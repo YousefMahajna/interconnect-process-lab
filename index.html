@@ -117,11 +117,15 @@ th:nth-child(2) { width: 28%; }
   <section class="card panel" id="panel" hidden aria-labelledby="usersTitle">
     <div class="panel-head">
       <div><h2 id="usersTitle" tabindex="-1">Users</h2><p>Manage names, NVIDIA emails, applications, and permission levels.</p></div>
-      <button class="btn ghost" id="back" type="button">Back to applications</button>
+      <button class="btn ghost" id="back" type="button" aria-label="Back to main page"><span aria-hidden="true">←</span>&nbsp; Main page</button>
     </div>
     <p>Use one row per user and application. “All applications” applies the selected level everywhere. Yousef Mahajna is the Administrator for all applications.</p>
     <p class="note">Viewer: view information. Editor: view and edit. Manager: manage an application. Administrator: manage all applications and the Users list. These levels require enforcement in the applications before they restrict access.</p>
-    <p class="note">Every @nvidia.com email has Viewer access to Adhesive Inventory, Lab Activities, and Process Recipe Library by default, even without a row here. Listed permissions can give higher access or access to other applications.</p>
+    <details class="save-setup" open>
+      <summary>General NVIDIA users</summary>
+      <p class="note">Choose the default level for an NVIDIA email without a personal application permission. “No access” blocks general entry. Personal permissions take precedence; your Administrator access is fixed.</p>
+      <div id="nvidiaRules" class="acts"></div>
+    </details>
     <div class="acts">
       <label class="search">
         <input id="usersSearch" type="search" placeholder="Search users by name or email" aria-label="Search users by name or email" autocomplete="off" aria-controls="rows" aria-describedby="usersSearchCount">
@@ -149,6 +153,9 @@ th:nth-child(2) { width: 28%; }
       <button class="btn ghost" id="discardDraft" type="button">Discard draft</button>
       <button class="btn ghost" id="copyJson" type="button">Copy updated users file</button>
       <button class="btn ghost" id="downloadJson" type="button">Download updated users file</button>
+      <button class="btn ghost" id="exportExcel" type="button">Export Excel</button>
+      <button class="btn ghost" id="importExcel" type="button">Import Excel</button>
+      <input id="excelFile" type="file" accept=".xlsx" hidden aria-label="Import permissions Excel workbook">
       <a class="btn ghost" id="editLink" target="_blank" rel="noopener noreferrer" href="https://github.com/YousefMahajna/interconnect-process-lab/edit/main/platforms.json">Open file on GitHub</a>
     </div>
     <section class="save-setup" id="saveSetup" hidden aria-label="Connect GitHub for shared saving">
@@ -166,6 +173,13 @@ th:nth-child(2) { width: 28%; }
       <button class="btn ghost" id="cancelGithubConnection" type="button">Cancel</button>
     </section>
     <div id="draftStatus" class="draft-status" role="status">No changes.</div>
+    <section id="excelPreview" class="save-setup" hidden aria-labelledby="excelPreviewTitle">
+      <h3 id="excelPreviewTitle">Review Excel import</h3>
+      <p id="excelPreviewSummary"></p>
+      <p class="note">Apply replaces the current permission draft for all applications. Each listed user gets a personal rule for each application; unlisted users follow its general NVIDIA rule. Review the table, then Save changes to publish.</p>
+      <button class="btn" id="applyExcel" type="button">Apply to draft</button>
+      <button class="btn ghost" id="cancelExcel" type="button">Cancel import</button>
+    </section>
     <div id="draftConflict" hidden>
       <p id="conflictText" role="alert"></p>
       <div class="acts">
@@ -178,9 +192,11 @@ th:nth-child(2) { width: 28%; }
   </section>
 </div>
 
-<script src="access-policy.js"></script>
+<script src="access-policy.js?v=excel-1"></script>
 <script src="github-store.js"></script>
 <script src="users-draft.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="permissions-excel.js"></script>
 <script>
 (function () {
   'use strict';
@@ -198,6 +214,7 @@ th:nth-child(2) { width: 28%; }
   var Drafts = null;
   try { Drafts = window.LabUsersDraft.create(window.localStorage); } catch (e) {}
   var draftBase = [], recovery = null, draftConflict = false;
+  var pendingExcel = null;
   var NS = "http://www.w3.org/2000/svg";
   var CFG = { owner: "yousefmahajna", hubRepo: "interconnect-process-lab" };
   var DATA = null, PLATFORMS = [], ACCESS = [], DRAFT = [], STAMPS = {};
@@ -324,7 +341,7 @@ th:nth-child(2) { width: 28%; }
         if (!draftConflict) $("draftStatus").textContent = "Recovered your draft on this browser, including any newer saved users. Click Save changes to save for everyone.";
       }
     } catch (e) { $("draftStatus").textContent = "A browser draft could not be recovered. It has not been deleted. Browser recovery may be unavailable."; }
-    drawRows();
+    pendingExcel = null; $("excelPreview").hidden = true; drawRows();
     usersOpen = true; render(); $("usersTitle").focus();
   }
   function resolveDraft(choice) {
@@ -342,8 +359,10 @@ th:nth-child(2) { width: 28%; }
   });
   function drawRows() {
     var body = $("rows"); body.replaceChildren();
+    drawNvidiaRules();
     $("addRow").disabled = draftConflict;
     DRAFT.forEach(function (row, i) {
+      if (Policy.isGeneral(row.email)) return;
       var tr = el("tr"), locked = Policy.isOwner(row.email);
       tr.dataset.draftIndex = i;
       ["name", "email"].forEach(function (field) {
@@ -368,7 +387,7 @@ th:nth-child(2) { width: 28%; }
         apps.value = row.platform;
         apps.addEventListener("change", function () { row.platform = apps.value; setDirty(true); }); appTd.appendChild(apps);
         var levels = el("select"); levels.setAttribute("aria-label", "Permission level, row " + (i + 1));
-        ["viewer", "editor", "manager"].forEach(function (k) { var o = el("option", null, Policy.LEVELS[k]); o.value = k; levels.appendChild(o); });
+        ["none", "viewer", "editor", "manager"].forEach(function (k) { var o = el("option", null, Policy.LEVELS[k]); o.value = k; levels.appendChild(o); });
         levels.value = row.level;
         levels.addEventListener("change", function () { row.level = levels.value; setDirty(true); }); levelTd.appendChild(levels);
         var remove = el("button", "rm", "Remove"); remove.type = "button";
@@ -389,9 +408,59 @@ th:nth-child(2) { width: 28%; }
       var match = textMatch && appMatch;
       tr.hidden = !match; if (match) count++;
     });
-    $("usersSearchCount").textContent = count + " of " + DRAFT.length + " permission rows shown";
+    var total = DRAFT.filter(function (r) { return !Policy.isGeneral(r.email); }).length;
+    $("usersSearchCount").textContent = count + " of " + total + " permission rows shown";
     $("usersSearchEmpty").hidden = count !== 0;
   }
+  function drawNvidiaRules() {
+    var box = $("nvidiaRules"); box.replaceChildren();
+    PLATFORMS.forEach(function (p) {
+      var label = el("label", "application-filter", p.title), select = el("select");
+      select.setAttribute("aria-label", "General NVIDIA access for " + p.title);
+      ["none", "viewer", "editor", "manager"].forEach(function (level) { var o = el("option", null, Policy.LEVELS[level]); o.value = level; select.appendChild(o); });
+      select.value = Policy.generalLevel(p.id, DRAFT); select.disabled = draftConflict;
+      select.addEventListener("change", function () {
+        var rule = DRAFT.find(function (r) { return Policy.isGeneral(r.email) && r.platform === p.id; });
+        if (rule) rule.level = select.value;
+        else DRAFT.push({ name: "All NVIDIA users", email: "*@nvidia.com", platform: p.id, level: select.value });
+        setDirty(true);
+      });
+      label.appendChild(select); box.appendChild(label);
+    });
+  }
+  function downloadBlob(blob, name) {
+    var url = URL.createObjectURL(blob), a = el("a"); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); window.setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  $("exportExcel").addEventListener("click", async function () {
+    if (saving || !Policy.isOwner(EMAIL)) return;
+    try {
+      var rows = Policy.validate(DRAFT, PLATFORMS.map(function (p) { return p.id; }));
+      var bytes = await window.LabPermissionsExcel.exportWorkbook(PLATFORMS, rows);
+      downloadBlob(new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), "Lab-Users.xlsx");
+      msg.className = "msg ok"; msg.textContent = "Excel exported: one sheet per application, with general NVIDIA access and user permissions.";
+    } catch (e) { exportError(e); }
+  });
+  $("importExcel").addEventListener("click", function () { if (!saving && !draftConflict) $("excelFile").click(); });
+  $("excelFile").addEventListener("change", async function () {
+    var file = $("excelFile").files[0]; $("excelFile").value = "";
+    if (!file || saving || draftConflict || !Policy.isOwner(EMAIL)) return;
+    try {
+      if (!/\.xlsx$/i.test(file.name) || file.size > 2097152) throw new Error("Choose an .xlsx file smaller than 2 MB.");
+      var imported = await window.LabPermissionsExcel.importWorkbook(await file.arrayBuffer(), PLATFORMS);
+      pendingExcel = imported;
+      $("excelPreviewSummary").textContent = PLATFORMS.length + " applications, " + new Set(imported.filter(function (r) { return !Policy.isGeneral(r.email); }).map(function (r) { return r.email; })).size + " listed users, and one general NVIDIA rule per application. Your current draft stays unchanged until Apply.";
+      $("excelPreview").hidden = false; msg.textContent = "";
+      $("excelPreview").scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (e) { pendingExcel = null; $("excelPreview").hidden = true; exportError(e); }
+  });
+  $("applyExcel").addEventListener("click", function () {
+    if (!pendingExcel || saving || draftConflict || !Policy.isOwner(EMAIL)) return;
+    DRAFT = pendingExcel; pendingExcel = null; $("excelPreview").hidden = true;
+    $("usersSearch").value = ""; $("usersApplication").value = "";
+    setDirty(true); drawRows();
+  });
+  $("cancelExcel").addEventListener("click", function () { pendingExcel = null; $("excelPreview").hidden = true; });
   function populateApplicationFilter(selected) {
     var select = $("usersApplication"); select.replaceChildren();
     [{ id: "", title: "All permission rows" }, { id: "*", title: "All applications grants only" }].concat(PLATFORMS).forEach(function (p) {

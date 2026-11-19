@@ -56,7 +56,24 @@ The Administrator sees a **Users** circle alongside the applications. The Users 
 
 Yousef Mahajna (`ymahajna@nvidia.com`) is the reserved Administrator for all applications. His entry cannot be removed, renamed, or downgraded in the editor. Other users can have different levels for different applications, or a level for All applications. If grants overlap, the highest level applies.
 
-The email selector accepts only the exact `@nvidia.com` domain (case insensitive). Every NVIDIA email, including unlisted users, receives default Viewer access to Adhesive Inventory (`adhesives`), Lab Activities (`activities`), and Process Recipe Library (`recipes`). Explicit Editor/Manager permissions take precedence and the owner remains Administrator. Practical Engineers and X-Section still require explicit grants. Removing an explicit entry does not revoke the three default Viewer applications. This is hub presentation behavior, not authentication or enforcement within a destination application.
+The email selector accepts only the exact `@nvidia.com` domain (case insensitive). The General NVIDIA users controls set the fallback for each application: No access, Viewer, Editor, or Manager. Until configured, the defaults are Viewer for Adhesive Inventory (`adhesives`), Lab Activities (`activities`), and Process Recipe Library (`recipes`), and No access for Practical Engineers and X-Section. General rules are stored as `*@nvidia.com` permission rows for one specific application and appear in the separate general controls. The wildcard cannot be used to sign in.
+
+Personal application rules take precedence over the general fallback. A personal No access row explicitly denies that application even with an all-applications grant; otherwise the highest matching personal grant wins. A personal all-applications No access rule blocks entry unless a specific application is granted. The owner always remains Administrator. These are hub presentation permissions, not authentication or enforcement within a destination application.
+
+### Excel export and import
+
+Use the back-arrow **Main page** button to return from Users to the application list without discarding the browser draft.
+
+**Export Excel** downloads an `.xlsx` with one worksheet per application, independent of the table filters. Each worksheet contains:
+- An application ID and format label, which must remain unchanged for import.
+- A General NVIDIA users row with Can enter (Yes/No) and Level.
+- Every currently listed user's name, NVIDIA email, Can enter, and effective level for that application. Denied entries read No / No access. Your Administrator entry is fixed.
+
+Edit the Yes/No and level dropdowns in Excel, then use **Import Excel**. Import validates every worksheet before showing a summary. **Apply to draft** replaces the current application permission draft, preserving the owner; it does not publish. Review the table and general controls, then connect GitHub and **Save changes** to publish. Cancel leaves the current draft unchanged.
+
+Import represents listed users as explicit per-application permissions, including No access, for the current applications. It expands previous all-applications grants into those application-specific values and does not create grants for future applications. Unlisted users follow the imported general rule. The current effective permissions survive an unchanged export/import round trip. Changing a general rule later affects users without personal rules; imported personal rows keep their own level.
+
+Import supports ordinary `.xlsx` files up to 2 MB with the exported application sheets and plain values. Missing/duplicate applications, invalid NVIDIA emails or levels, duplicate user emails on a sheet, formulas, macros/external links, and owner demotion are rejected without changing the draft. Excel shared strings and inline strings are supported. ZIP size and entry limits bound parsing. Files are processed locally in the browser, using vendored JSZip 3.10.1; its license is included in `vendor/JSZip-LICENSE.md`.
 
 ### Publish Users changes
 

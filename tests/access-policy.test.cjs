@@ -52,3 +52,22 @@ test('duplicate grants and conflicting names are rejected', () => {
   assert.throws(() => p.validate([p.ownerRow(), grant(), grant({ platform: 'recipes', name: 'Different Name' })], ids), /same name/);
   assert.equal(p.validate([p.ownerRow(), grant(), grant({ platform: 'recipes', level: 'editor' })], ids).length, 3);
 });
+test('general NVIDIA rules can allow or block entry independently for each application', () => {
+  const rows = [{ name: 'All NVIDIA users', email: '*@nvidia.com', platform: 'adhesives', level: 'none' },
+    { name: 'All NVIDIA users', email: '*@nvidia.com', platform: 'recipes', level: 'editor' }];
+  assert.equal(p.levelFor('new@nvidia.com', 'adhesives', rows), null);
+  assert.equal(p.levelFor('new@nvidia.com', 'recipes', rows), 'editor');
+  assert.equal(p.levelFor('ymahajna@nvidia.com', 'adhesives', rows), 'admin');
+  assert.equal(p.validEmail('*@nvidia.com'), false);
+  assert.equal(p.validate([p.ownerRow(), ...rows], ids).length, 3);
+});
+test('personal levels override the general rule, including No access', () => {
+  const rows = [{ name: 'All NVIDIA users', email: '*@nvidia.com', platform: 'adhesives', level: 'manager' }];
+  assert.equal(p.levelFor('test@nvidia.com', 'adhesives', [...rows, grant()]), 'viewer');
+  assert.equal(p.levelFor('test@nvidia.com', 'adhesives', [...rows, grant({ level: 'none' })]), null);
+  assert.equal(p.levelFor('test@nvidia.com', 'adhesives', [grant({ platform: '*', level: 'none' })]), null);
+  assert.equal(p.levelFor('test@nvidia.com', 'adhesives', [grant({ platform: '*', level: 'none' }), grant({ level: 'editor' })]), 'editor');
+});
+test('general rules cannot grant Administrator or use an all-applications wildcard', () => {
+  for (const patch of [{ level: 'admin' }, { platform: '*' }]) assert.throws(() => p.validate([p.ownerRow(), { name: 'All NVIDIA users', email: '*@nvidia.com', platform: 'adhesives', level: 'viewer', ...patch }], ids), /general NVIDIA/);
+});
