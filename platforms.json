@@ -182,6 +182,30 @@
       "email": "hmasarwi@nvidia.com",
       "platform": "recipes",
       "level": "editor"
+    },
+    {
+      "name": "Oleg",
+      "email": "olegm@nvidia.com",
+      "platform": "adhesives",
+      "level": "editor"
+    },
+    {
+      "name": "Oleg",
+      "email": "olegm@nvidia.com",
+      "platform": "activities",
+      "level": "editor"
+    },
+    {
+      "name": "Oleg",
+      "email": "olegm@nvidia.com",
+      "platform": "xsection",
+      "level": "editor"
+    },
+    {
+      "name": "Oleg",
+      "email": "olegm@nvidia.com",
+      "platform": "recipes",
+      "level": "editor"
     }
   ]
 }
