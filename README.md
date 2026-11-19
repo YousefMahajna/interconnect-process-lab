@@ -47,7 +47,7 @@ X-Section has no link yet. Put `xsection-lab.html` in its own repo as `index.htm
 
 ## Users and application levels
 
-The Administrator sees a **Users** circle alongside the applications. The Users screen has one row per user and application: name, NVIDIA email, application, and permission level. Search listed users by name or email (case insensitive); the result count refers to permission rows. Filtering does not change the saved data or the rows included in exports and shared saves. Adding a row clears the search so the new row is visible.
+The Administrator sees a **Users** circle alongside the applications. The Users screen has one row per user and application: name, NVIDIA email, application, and permission level. Search listed users by name or email (case insensitive), and combine that search with the Application filter. Selecting an application also includes All applications grants; there is a separate option for only those grants. The result count refers to permission rows. Filtering does not change saved data or the rows included in exports and shared saves. Adding a row clears the text search and uses the selected application so the new row is visible.
 
 - Viewer: view information.
 - Editor: view and edit information.
@@ -62,13 +62,14 @@ The email selector accepts only the exact `@nvidia.com` domain (case insensitive
 
 1. Select your NVIDIA email and open **Users**.
 2. Add a user/application row, enter a full name and NVIDIA email, and choose an application and level.
-3. Click **Save changes**. The first time, open **GitHub save setup** and create a fine-grained GitHub token for the YousefMahajna account, selecting only `interconnect-process-lab` and **Contents: Read and write**. Enter the token in the website's password field, then click Save changes again.
-4. A successful save commits the shared file to `main`. The current table updates immediately, and new visits read the latest file directly from GitHub, even while Pages is publishing.
-5. Wait for the success message before leaving. Errors retain the edits and explain the problem.
+3. Click **Connect GitHub**, create a fine-grained GitHub token for the YousefMahajna account selecting only `interconnect-process-lab` and **Contents: Read and write**, enter it in the website's password field and click **Connect account**. The input clears and the connection form closes. This connection is separate from Codex.
+4. Click **Save changes**. You can save repeatedly without reentering credentials while the page stays open. Save is disabled until connected and never automatically opens the connection form. Disconnecting, changing email, refreshing or closing the page ends the connection.
+5. A successful save commits the shared file to `main`. The current table updates immediately, and new visits read the latest file directly from GitHub, even while Pages is publishing.
+6. Wait for the success message before leaving. Errors retain the edits and explain the problem.
 
 Copy and Download remain backup options; they do not save changes. Unsaved edits warn before leaving. Names are required, one name must be used consistently for each email, and duplicate email/application rows are rejected. Saves preserve the latest platform fields and reject stale permission edits rather than overwriting another change. GitHub's file SHA also protects against concurrent writes.
 
-The browser verifies that the token belongs to the fixed YousefMahajna GitHub account before saving. Tokens are sent only to `api.github.com` in authorization headers, never stored in local/session storage or repository files, and cleared from the input after a save attempt or leaving Users. Enter tokens only in the website, never in chat. A token can be revoked in GitHub settings. Repository rules must permit updates to `main` for direct saves; if not, the page shows an error and retains the edits.
+The browser verifies that the token belongs to the fixed YousefMahajna GitHub account when connecting and saving. Tokens are sent only to `api.github.com` in authorization headers and held only in a private page-memory variable while connected. They are never stored in local/session storage or repository files; the input clears after a connection attempt. Authentication failures end the connection. Enter tokens only in the website, never in chat. A token can be revoked in GitHub settings. Repository rules must permit updates to `main` for direct saves; if not, the page shows an error and retains the edits. Shared saving still requires a credential; removing the automatic setup prompt does not provide token-free authentication.
 
 ### Browser draft recovery
 

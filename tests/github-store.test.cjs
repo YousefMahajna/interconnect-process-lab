@@ -75,3 +75,24 @@ test('invalid grants cannot be saved even with an owner credential', async () =>
   await assert.rejects(f.store.save('credential', seed().access, [...seed().access, { ...grant(), email: 'test@gmail.com' }]), /@nvidia.com/);
   assert.equal(f.writes, 0);
 });
+test('one explicit connection supports repeated saves until disconnected', async () => {
+  const f = fixture();
+  assert.equal(f.store.isConnected(), false);
+  await f.store.connect('credential'); assert.equal(f.store.isConnected(), true);
+  const first = await f.store.saveConnected(seed().access, [...seed().access, grant()]);
+  await f.store.saveConnected(first.data.access, first.data.access);
+  assert.equal(f.writes, 2); assert.equal(f.store.isConnected(), true);
+  f.store.disconnect(); assert.equal(f.store.isConnected(), false);
+  await assert.rejects(f.store.saveConnected(f.data.access, f.data.access), /Connect GitHub/);
+  assert.equal(f.writes, 2);
+});
+test('failed connections never enable shared saving', async () => {
+  const f = fixture(); f.identity = { id: 12, login: 'other' };
+  await assert.rejects(f.store.connect('credential'), /Only the YousefMahajna/);
+  assert.equal(f.store.isConnected(), false);
+});
+test('revoked credentials end an established page connection', async () => {
+  const f = fixture(); await f.store.connect('credential'); f.status = 401;
+  await assert.rejects(f.store.saveConnected(seed().access, seed().access), /did not accept/);
+  assert.equal(f.store.isConnected(), false); assert.equal(f.writes, 0);
+});
