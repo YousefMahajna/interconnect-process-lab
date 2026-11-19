@@ -12,22 +12,28 @@ test('Yousef has the highest presentation level for every application', () => {
   for (const id of ids) assert.equal(p.levelFor('YMAHAJNA@nvidia.com', id, []), 'admin');
   assert.equal(p.isOwner('other@nvidia.com'), false);
 });
-test('unknown and non-NVIDIA emails have no application grants', () => {
-  assert.equal(p.levelFor('unknown@nvidia.com', 'adhesives', [grant()]), null);
+test('unlisted NVIDIA emails get only the three default Viewer applications', () => {
+  for (const id of ['adhesives', 'activities', 'recipes']) assert.equal(p.levelFor(' Unknown@NVIDIA.COM ', id, []), 'viewer');
+  for (const id of ['engineers', 'xsection', 'unknown']) assert.equal(p.levelFor('unknown@nvidia.com', id, []), null);
+});
+test('non-NVIDIA emails have no grants even on default applications', () => {
   assert.equal(p.levelFor('test@gmail.com', 'adhesives', [grant({ email: 'test@gmail.com' })]), null);
+  assert.equal(p.levelFor('test@nvidia.com.attacker.com', 'recipes', []), null);
 });
 test('grants apply only to the selected user and application', () => {
   const rows = [grant(), grant({ email: 'other@nvidia.com', platform: 'recipes', level: 'manager' })];
   assert.equal(p.levelFor('test@nvidia.com', 'adhesives', rows), 'viewer');
-  assert.equal(p.levelFor('test@nvidia.com', 'recipes', rows), null);
+  assert.equal(p.levelFor('test@nvidia.com', 'recipes', rows), 'viewer');
+  assert.equal(p.levelFor('test@nvidia.com', 'engineers', rows), null);
 });
 test('wildcard grants combine with application grants using the highest level', () => {
   const rows = [grant({ platform: '*', level: 'editor' }), grant({ level: 'manager' })];
   assert.equal(p.levelFor('test@nvidia.com', 'adhesives', rows), 'manager');
   assert.equal(p.levelFor('test@nvidia.com', 'recipes', rows), 'editor');
 });
-test('administrator is reserved for the owner; invalid levels grant nothing', () => {
-  assert.equal(p.levelFor('test@nvidia.com', 'adhesives', [grant({ level: 'admin' })]), null);
+test('administrator is reserved for the owner; invalid levels do not elevate default grants', () => {
+  assert.equal(p.levelFor('test@nvidia.com', 'adhesives', [grant({ level: 'admin' })]), 'viewer');
+  assert.equal(p.levelFor('test@nvidia.com', 'engineers', [grant({ platform: '*', level: 'admin' })]), null);
   assert.throws(() => p.validate([p.ownerRow(), grant({ level: 'admin' })], ids), /permission level/);
 });
 test('drafts migrate legacy owner entries and retain per-platform user names', () => {

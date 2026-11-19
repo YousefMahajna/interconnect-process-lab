@@ -119,6 +119,15 @@ th:nth-child(2) { width: 28%; }
     </div>
     <p>Use one row per user and application. “All applications” applies the selected level everywhere. Yousef Mahajna is the Administrator for all applications.</p>
     <p class="note">Viewer: view information. Editor: view and edit. Manager: manage an application. Administrator: manage all applications and the Users list. These levels require enforcement in the applications before they restrict access.</p>
+    <p class="note">Every @nvidia.com email has Viewer access to Adhesive Inventory, Lab Activities, and Process Recipe Library by default, even without a row here. Listed permissions can give higher access or access to other applications.</p>
+    <div class="acts">
+      <label class="search">
+        <input id="usersSearch" type="search" placeholder="Search users by name or email" aria-label="Search users by name or email" autocomplete="off" aria-controls="rows" aria-describedby="usersSearchCount">
+      </label>
+      <button class="btn ghost" id="clearUsersSearch" type="button">Clear search</button>
+    </div>
+    <div id="usersSearchCount" class="note" role="status"></div>
+    <p id="usersSearchEmpty" hidden>No listed users match this name or email.</p>
     <div class="scroll">
       <table>
         <caption class="note" style="text-align:left;padding:0 10px 12px">Application permissions</caption>
@@ -288,6 +297,7 @@ th:nth-child(2) { width: 28%; }
   }
   function openUsers() {
     if (!Policy.isOwner(EMAIL)) return;
+    $("usersSearch").value = "";
     draftBase = structuredClone(ACCESS); recovery = null; draftConflict = false;
     DRAFT = Policy.editableRows(ACCESS); setDirty(false);
     $("draftConflict").hidden = true;
@@ -323,6 +333,7 @@ th:nth-child(2) { width: 28%; }
     $("addRow").disabled = draftConflict;
     DRAFT.forEach(function (row, i) {
       var tr = el("tr"), locked = Policy.isOwner(row.email);
+      tr.dataset.draftIndex = i;
       ["name", "email"].forEach(function (field) {
         var td = el("td");
         if (locked) td.appendChild(el("span", "readonly", row[field]));
@@ -355,7 +366,20 @@ th:nth-child(2) { width: 28%; }
       tr.append(appTd, levelTd, actionTd); body.appendChild(tr);
     });
     if (draftConflict) body.querySelectorAll("input,select,button").forEach(function (c) { c.disabled = true; });
+    filterUsers();
   }
+  function filterUsers() {
+    var query = Policy.normalize($("usersSearch").value), count = 0;
+    $("rows").querySelectorAll("tr").forEach(function (tr) {
+      var row = DRAFT[Number(tr.dataset.draftIndex)];
+      var match = !query || Policy.normalize(row.name).includes(query) || Policy.normalize(row.email).includes(query);
+      tr.hidden = !match; if (match) count++;
+    });
+    $("usersSearchCount").textContent = count + " of " + DRAFT.length + " permission rows shown";
+    $("usersSearchEmpty").hidden = count !== 0;
+  }
+  $("usersSearch").addEventListener("input", filterUsers);
+  $("clearUsersSearch").addEventListener("click", function () { $("usersSearch").value = ""; filterUsers(); $("usersSearch").focus(); });
   function exportText() {
     if (!Policy.isOwner(EMAIL)) throw new Error("Only the Administrator can export the Users list.");
     var rows = Policy.validate(DRAFT, PLATFORMS.map(function (p) { return p.id; }));
@@ -411,6 +435,7 @@ th:nth-child(2) { width: 28%; }
   });
   $("addRow").addEventListener("click", function () {
     if (!Policy.isOwner(EMAIL)) return;
+    $("usersSearch").value = "";
     DRAFT.push({ name: "", email: "", platform: PLATFORMS.length ? PLATFORMS[0].id : "*", level: "viewer" });
     setDirty(true); drawRows(); $("rows").lastElementChild.querySelector("input").focus();
   });

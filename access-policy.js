@@ -5,6 +5,7 @@
   var OWNER_NAME = 'Yousef Mahajna';
   var LEVELS = { viewer: 'Viewer', editor: 'Editor', manager: 'Manager', admin: 'Administrator' };
   var RANK = { viewer: 1, editor: 2, manager: 3, admin: 4 };
+  var DEFAULT_VIEWER = ['adhesives', 'activities', 'recipes'];
   function normalize(value) { return String(value || '').trim().toLowerCase(); }
   function validEmail(value) { return /^[a-z0-9.!#$%&'*+\/=?^_`{|}~-]+@nvidia\.com$/i.test(String(value || '').trim()); }
   function isOwner(email) { return normalize(email) === OWNER; }
@@ -12,7 +13,7 @@
   function levelFor(email, platform, rows) {
     if (!validEmail(email)) return null;
     if (isOwner(email)) return 'admin';
-    var best = null;
+    var best = DEFAULT_VIEWER.indexOf(platform) !== -1 ? 'viewer' : null;
     rows.forEach(function (row) {
       if (normalize(row.email) === normalize(email) && (row.platform === '*' || row.platform === platform) &&
           ['viewer', 'editor', 'manager'].indexOf(row.level) !== -1 && (!best || RANK[row.level] > RANK[best])) best = row.level;
