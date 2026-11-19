@@ -129,13 +129,14 @@ th:nth-child(2) { width: 28%; }
     <div class="acts">
       <button class="btn ghost" id="addRow" type="button">Add user / application</button>
       <button class="btn" id="saveUsers" type="button">Save changes</button>
+      <button class="btn ghost" id="discardDraft" type="button">Discard draft</button>
       <button class="btn ghost" id="copyJson" type="button">Copy updated users file</button>
       <button class="btn ghost" id="downloadJson" type="button">Download updated users file</button>
       <a class="btn ghost" id="editLink" target="_blank" rel="noopener noreferrer" href="https://github.com/YousefMahajna/interconnect-process-lab/edit/main/platforms.json">Open file on GitHub</a>
     </div>
     <details class="save-setup" id="saveSetup">
       <summary>GitHub save setup</summary>
-      <p>Saving updates the shared Users list for everyone. Only your YousefMahajna GitHub account can save.</p>
+      <p>This is a GitHub access token, not your NVIDIA or GitHub password. It lets this website update the shared Users list. Only your YousefMahajna GitHub account can save.</p>
       <ol>
         <li><a href="https://github.com/settings/personal-access-tokens/new?name=Lab%20Users%20editor&amp;target_name=YousefMahajna&amp;expires_in=30&amp;contents=write" target="_blank" rel="noopener noreferrer">Create a GitHub token</a> for your YousefMahajna account.</li>
         <li>Choose <strong>Only select repositories → interconnect-process-lab</strong>. Set repository permission <strong>Contents → Read and write</strong>, then generate the token.</li>
@@ -146,6 +147,13 @@ th:nth-child(2) { width: 28%; }
       <p class="note" id="tokenNote">The token is sent only to GitHub, is never saved in browser storage, and is cleared after each save attempt or when leaving Users. This website uses a separate connection from Codex.</p>
     </details>
     <div id="draftStatus" class="draft-status" role="status">No changes.</div>
+    <div id="draftConflict" hidden>
+      <p id="conflictText" role="alert"></p>
+      <div class="acts">
+        <button class="btn ghost" id="keepLocal" type="button">Keep my edits for conflicts</button>
+        <button class="btn ghost" id="keepRemote" type="button">Keep saved values for conflicts</button>
+      </div>
+    </div>
     <div class="msg" id="msg" role="alert"></div>
     <p class="note">Click Save changes to update the shared list on GitHub. New visits load that saved list immediately; publishing the website can take a minute. Copy and Download are backups only. The Users list is publicly readable because this repository is public.</p>
   </section>
@@ -153,6 +161,7 @@ th:nth-child(2) { width: 28%; }
 
 <script src="access-policy.js"></script>
 <script src="github-store.js"></script>
+<script src="users-draft.js"></script>
 <script>
 (function () {
   'use strict';
@@ -167,6 +176,9 @@ th:nth-child(2) { width: 28%; }
 
   var Policy = window.LabAccess;
   var Store = window.LabGithubStore.create(window.fetch.bind(window), Policy);
+  var Drafts = null;
+  try { Drafts = window.LabUsersDraft.create(window.localStorage); } catch (e) {}
+  var draftBase = [], recovery = null, draftConflict = false;
   var NS = "http://www.w3.org/2000/svg";
   var CFG = { owner: "yousefmahajna", hubRepo: "interconnect-process-lab" };
   var DATA = null, PLATFORMS = [], ACCESS = [], DRAFT = [], STAMPS = {};
@@ -193,11 +205,19 @@ th:nth-child(2) { width: 28%; }
   }
   function setDirty(value) {
     dirty = value;
-    $("draftStatus").textContent = dirty ? "Unsaved changes. Click Save changes to update the shared list." : "No unsaved changes.";
+    var status = dirty ? "Draft kept on this browser. Click Save changes to save for everyone." : "No unsaved changes.";
+    if (dirty) {
+      try {
+        if (!Drafts) throw new Error("Storage unavailable");
+        // Preserve the original baseline until conflicts have been resolved.
+        if (!draftConflict) Drafts.write(draftBase, DRAFT);
+      } catch (e) { status = "Unsaved changes. Browser draft recovery is unavailable. Save or download before refreshing."; }
+    }
+    $("draftStatus").textContent = status;
     msg.textContent = "";
   }
   function clearDraft() { dirty = false; DRAFT = []; usersOpen = false; $("githubToken").value = ""; }
-  function canLeave() { return !saving && (!dirty || window.confirm("Discard your unsaved Users changes?")); }
+  function canLeave() { return !saving; }
   function signIn() {
     main.className = "card gate"; main.replaceChildren();
     main.appendChild(el("h2", null, "Enter your NVIDIA email"));
@@ -268,11 +288,39 @@ th:nth-child(2) { width: 28%; }
   }
   function openUsers() {
     if (!Policy.isOwner(EMAIL)) return;
-    DRAFT = Policy.editableRows(ACCESS); setDirty(false); drawRows();
+    draftBase = structuredClone(ACCESS); recovery = null; draftConflict = false;
+    DRAFT = Policy.editableRows(ACCESS); setDirty(false);
+    $("draftConflict").hidden = true;
+    try {
+      recovery = Drafts && Drafts.read();
+      if (recovery) {
+        var restored = window.LabUsersDraft.recover(recovery.base, recovery.rows, ACCESS);
+        DRAFT = restored.rows; draftConflict = restored.conflicts.length > 0;
+        $("draftConflict").hidden = !draftConflict;
+        if (draftConflict) $("conflictText").textContent = "Your draft and the shared list changed the same entries: " + restored.conflicts.join(", ") + ". Choose which values to keep before saving.";
+        setDirty(true);
+        if (!draftConflict) $("draftStatus").textContent = "Recovered your draft on this browser, including any newer saved users. Click Save changes to save for everyone.";
+      }
+    } catch (e) { $("draftStatus").textContent = "A browser draft could not be recovered. It has not been deleted. Browser recovery may be unavailable."; }
+    drawRows();
     usersOpen = true; render(); $("usersTitle").focus();
   }
+  function resolveDraft(choice) {
+    if (!recovery || !draftConflict) return;
+    DRAFT = window.LabUsersDraft.recover(recovery.base, recovery.rows, ACCESS, choice).rows;
+    draftConflict = false; recovery = null; draftBase = structuredClone(ACCESS);
+    $("draftConflict").hidden = true; setDirty(true); drawRows();
+  }
+  $("keepLocal").addEventListener("click", function () { resolveDraft("local"); });
+  $("keepRemote").addEventListener("click", function () { resolveDraft("remote"); });
+  $("discardDraft").addEventListener("click", function () {
+    if (saving || !window.confirm("Discard the draft on this browser and use the saved Users list?")) return;
+    try { if (Drafts) Drafts.clear(); } catch (e) { exportError(new Error("Could not clear browser draft storage.")); return; }
+    openUsers();
+  });
   function drawRows() {
     var body = $("rows"); body.replaceChildren();
+    $("addRow").disabled = draftConflict;
     DRAFT.forEach(function (row, i) {
       var tr = el("tr"), locked = Policy.isOwner(row.email);
       ["name", "email"].forEach(function (field) {
@@ -306,6 +354,7 @@ th:nth-child(2) { width: 28%; }
       }
       tr.append(appTd, levelTd, actionTd); body.appendChild(tr);
     });
+    if (draftConflict) body.querySelectorAll("input,select,button").forEach(function (c) { c.disabled = true; });
   }
   function exportText() {
     if (!Policy.isOwner(EMAIL)) throw new Error("Only the Administrator can export the Users list.");
@@ -315,6 +364,7 @@ th:nth-child(2) { width: 28%; }
   function exportError(error) { msg.className = "msg"; msg.textContent = error.message || "The file could not be exported."; }
   $("saveUsers").addEventListener("click", async function () {
     if (saving || !Policy.isOwner(EMAIL)) return;
+    if (draftConflict) { exportError(new Error("Choose which conflicting values to keep before saving.")); return; }
     var token = $("githubToken").value.trim();
     $("githubToken").value = "";
     try { exportText(); } catch (error) { token = ""; exportError(error); return; }
@@ -330,6 +380,8 @@ th:nth-child(2) { width: 28%; }
     try {
       var result = await Store.save(token, ACCESS, DRAFT);
       DATA = result.data; ACCESS = DATA.access; PLATFORMS = DATA.platforms;
+      try { if (Drafts) Drafts.clear(); } catch (e) {}
+      draftBase = structuredClone(ACCESS); recovery = null;
       DRAFT = Policy.editableRows(ACCESS); setDirty(false); drawRows();
       $("saveSetup").open = false;
       $("draftStatus").textContent = "Saved to GitHub. The shared Users list is up to date.";
