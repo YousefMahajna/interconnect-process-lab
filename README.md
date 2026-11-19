@@ -6,8 +6,9 @@ Live page: https://yousefmahajna.github.io/interconnect-process-lab/
 
 ## How it works
 
-- `index.html` is the hub page. It never changes when you add or update a platform.
-- `platforms.json` is the list of platforms. This is the only file you edit.
+- `index.html` is the hub page and Users editor. It does not need changes when adding a platform.
+- `access-policy.js` holds the email and application-list rules.
+- `platforms.json` holds the platforms and user/application rows. This is the configuration file you edit.
 - `.github/workflows/pages.yml` publishes the page to GitHub Pages every time you push to `main`.
 - Each platform repo is updated and deployed on its own, as before. The hub reads each repo's last push date from GitHub and shows it as "Updated …" under the platform name.
 
@@ -42,3 +43,45 @@ Edit `platforms.json` on GitHub (the pencil icon), add one entry, and commit. Th
 ## X-Section
 
 X-Section has no link yet. Put `xsection-lab.html` in its own repo as `index.html`, turn on Pages, then paste its link into the `url` and `repo` fields for `xsection` in `platforms.json`.
+
+## Users and application levels
+
+The Administrator sees a **Users** circle alongside the applications. The Users screen has one row per user and application: name, NVIDIA email, application, and permission level.
+
+- Viewer: view information.
+- Editor: view and edit information.
+- Manager: manage one application.
+- Administrator: manage all applications and the Users list.
+
+Yousef Mahajna (`ymahajna@nvidia.com`) is the reserved Administrator for all applications. His entry cannot be removed, renamed, or downgraded in the editor. Other users can have different levels for different applications, or a level for All applications. If grants overlap, the highest level applies.
+
+The email selector accepts only the exact `@nvidia.com` domain (case insensitive). Unlisted users see no applications. This is presentation behavior, not authentication.
+
+### Publish Users changes
+
+1. Select your NVIDIA email and open **Users**.
+2. Add a user/application row, enter a full name and NVIDIA email, and choose an application and level.
+3. Copy or download the updated `platforms.json`.
+4. Open the file on GitHub, replace its contents, and commit.
+5. Wait for the Pages deployment and reload.
+
+Exporting does not persist or apply the changes. Unsaved edits warn before leaving. Names are required, one name must be used consistently for each email, and duplicate email/application rows are rejected. Existing platform fields are preserved during export.
+
+### Security status and required next step
+
+**This version is an application directory and Users editor, not a verified login system.** Anyone can select any NVIDIA email, including the Administrator address. Administrator checks and protected rows only protect the normal editing interface; they do not authorize a real identity. Actual changes to the live file still require GitHub repository write permission.
+
+`platforms.json` and all files in this public repository are publicly readable. Do not put passwords, tokens, confidential user data, or authentication secrets here. The browser's stored email is a convenience only.
+
+Before this can enforce access:
+1. Connect a service that verifies mailbox ownership using an emailed code/link, or an approved NVIDIA work-account identity provider.
+2. Store user grants in a protected shared service. Permit only the verified Administrator to change them and check permissions in that service on every operation.
+3. Integrate verified sign-in and permission checks into **each linked application and its data service**. Hiding a hub link or displaying a Viewer badge does not prevent direct access or editing on the destination.
+4. Retire the unverified email-selector path when verified sign-in is enabled.
+
+A static GitHub Pages change alone cannot provide these protections. Sign-in service configuration and changes to the application repositories are separate required work.
+
+### Development checks
+
+Run `node --test tests/access-policy.test.cjs` with Node 24. The checks workflow runs the same tests on pull requests and pushes to main. `access-policy.js` contains independently tested presentation rules; it is not a security boundary.
+
