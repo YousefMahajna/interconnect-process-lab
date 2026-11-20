@@ -369,9 +369,9 @@ button.item:hover .disc { transform: scale(1.04); }
     if (entryAction) { node.type = "button"; node.addEventListener("click", entryAction); node.setAttribute("aria-controls", selected ? "panel" : "signInPanel"); }
     else if (opensLink) {
       node.href = p.url; node.target = "_blank"; node.rel = "noopener noreferrer";
-      if (p.id === "adhesives" || p.id === "activities") {
+      if (p.id === "adhesives" || p.id === "activities" || p.id === "recipes") {
         var target = new URL(p.url, window.location.href);
-        if (target.origin === "https://yousefmahajna.github.io" && target.pathname.startsWith(p.id === "adhesives" ? "/lab-adhesives/" : "/lab-activity-tracker/")) {
+        if (target.origin === "https://yousefmahajna.github.io" && target.pathname.startsWith(({adhesives:"/lab-adhesives/",activities:"/lab-activity-tracker/",recipes:"/Process-Recipe-Library/"})[p.id])) {
           target.searchParams.set("entry", "process-lab-v2");
           var handoff = new URLSearchParams(); handoff.set("ipl-entry", "1"); handoff.set("email", EMAIL);
           target.hash = handoff.toString(); node.href = target.toString();
