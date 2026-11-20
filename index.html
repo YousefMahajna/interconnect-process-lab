@@ -136,6 +136,11 @@ button.item:hover .disc { transform: scale(1.04); }
   .account { max-width: 100%; }
   .auth-panel { width: calc(100% - 36px); padding: 22px 16px; }
 }
+
+/* Contrasting NVIDIA-color rings around available application circles. */
+.cell { --tile-ring: var(--blue); }
+.cell[data-platform="activities"], .cell[data-platform="engineers"] { --tile-ring: var(--green); }
+.item:not(.locked):not(.off) .disc { box-shadow: 0 0 0 4px var(--surface), 0 0 0 7px var(--tile-ring); }
 </style>
 </head>
 <body>
