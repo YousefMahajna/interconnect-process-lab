@@ -211,6 +211,8 @@ button.item:hover .disc { transform: scale(1.04); }
     </div>
     <div class="acts">
       <button class="btn ghost" id="addRow" type="button">Add user / application</button>
+      <button class="btn" id="sharedSignIn" type="button">Shared inventory sign-in</button>
+      <a class="btn" href="https://yousefmahajna.github.io/lab-adhesives/shared-setup.html">Shared setup</a>
       <button class="btn" id="saveUsers" type="button" disabled>Save changes</button>
       <button class="btn ghost" id="discardDraft" type="button">Discard draft</button>
       <button class="btn ghost" id="copyJson" type="button">Copy updated users file</button>
@@ -254,6 +256,10 @@ button.item:hover .disc { transform: scale(1.04); }
   </section>
 </div>
 
+<script src="firebase-config.js?v=1"></script>
+<script src="firebase-auth.js?v=1"></script>
+<script src="firebase-access.js?v=1"></script>
+<script src="firebase-signin.js?v=1"></script>
 <script src="access-policy.js?v=excel-1"></script>
 <script src="github-store.js"></script>
 <script src="users-draft.js"></script>
@@ -611,6 +617,7 @@ button.item:hover .disc { transform: scale(1.04); }
       $("cancelGithubConnection").disabled = false; $("connectGithub").disabled = false; updateConnectionUI();
     }
   });
+  $("sharedSignIn").addEventListener("click", async function(){try{await LabFirebaseAuth.ready();await LabFirebaseSignIn.open();msg.textContent=LabFirebaseAuth.user()?.emailVerified?"Shared inventory sign-in ready.":"Verify your email to update shared inventory permissions.";}catch(error){exportError(error);}});
   $("saveUsers").addEventListener("click", async function () {
     if (saving || !Policy.isOwner(EMAIL)) return;
     if (draftConflict) { exportError(new Error("Choose which conflicting values to keep before saving.")); return; }
@@ -621,13 +628,23 @@ button.item:hover .disc { transform: scale(1.04); }
     controls.forEach(function (c) { c.disabled = true; });
     $("saveUsers").textContent = "Saving…"; msg.textContent = "";
     try {
+      // Once autosave is initialized, require verified owner auth before changing grants.
+      var sharedActive=await LabFirebaseAccess.load();
+      if(sharedActive){
+        await LabFirebaseAuth.ready();
+        var firebaseUser=LabFirebaseAuth.user();
+        if(!firebaseUser?.emailVerified||firebaseUser.email.toLowerCase()!=="ymahajna@nvidia.com")throw new Error("Use Shared inventory sign-in and verify ymahajna@nvidia.com before saving access changes.");
+      }
       var result = await Store.saveConnected(ACCESS, DRAFT);
+      var sharedSyncError=null;
+      if(sharedActive){try{await LabFirebaseAccess.sync(result.data.access);}catch(error){sharedSyncError=error;}}
       DATA = result.data; ACCESS = DATA.access; PLATFORMS = DATA.platforms;
       try { if (Drafts) Drafts.clear(); } catch (e) {}
       draftBase = structuredClone(ACCESS); recovery = null;
       DRAFT = Policy.editableRows(ACCESS); setDirty(false); populateApplicationFilter($("usersApplication").value); drawRows();
       $("draftStatus").textContent = "Saved to GitHub. The shared Users list is up to date.";
-      msg.className = "msg ok"; msg.textContent = "Changes saved for everyone.";
+      msg.className = sharedSyncError?"msg":"msg ok";
+      msg.textContent=sharedSyncError?"Users saved to GitHub, but shared inventory permissions are not yet synchronized. Open Shared setup and click Sync permissions. "+sharedSyncError.message:"Changes saved for everyone.";
     } catch (error) { exportError(error); }
     finally {
       saving = false; controls.forEach(function (c) { c.disabled = false; }); updateConnectionUI();
@@ -691,3 +708,4 @@ button.item:hover .disc { transform: scale(1.04); }
 </script>
 </body>
 </html>
+
