@@ -120,3 +120,7 @@ A static GitHub Pages change alone cannot provide these protections. Sign-in ser
 
 Run `node --test tests/*.test.cjs` with Node 24. The checks workflow runs the same tests on pull requests and pushes to main. Tests cover presentation rules and persistence behavior, including credentials, concurrency conflicts, Unicode, and preserving existing platform fields. `access-policy.js` is not a security boundary; GitHub authorizes shared saves.
 
+
+### Activities entry from Process Lab
+
+The Activities tile passes the selected email in the URL fragment to the owned `lab-activity-tracker` site. The application reads the latest shared permissions and skips its legacy entry form for this route: Viewer is read-only, Editor uses the existing lab role, and Manager/Administrator uses the manager role. The ordinary Activities URL retains its Guest/Lab/Manager entry screen. Missing or denied permissions block hub entry without restoring a legacy session. Activities uses a separate explicit, memory-only GitHub connection for publishing pending changes.
