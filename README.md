@@ -124,3 +124,7 @@ Run `node --test tests/*.test.cjs` with Node 24. The checks workflow runs the sa
 ### Activities entry from Process Lab
 
 The Activities tile passes the selected email in the URL fragment to the owned `lab-activity-tracker` site. The application reads the latest shared permissions and skips its legacy entry form for this route: Viewer is read-only, Editor uses the existing lab role, and Manager/Administrator uses the manager role. The ordinary Activities URL retains its Guest/Lab/Manager entry screen. Missing or denied permissions block hub entry without restoring a legacy session. Activities uses a separate explicit, memory-only GitHub connection for publishing pending changes.
+
+### Recipe Library entry from Process Lab
+
+The Recipe Library tile passes only the selected email in the URL fragment to the owned `Process-Recipe-Library` site. The Library loads the latest shared permission: Viewer is read-only; Editor, Manager and Administrator use its existing Editor capabilities. Hub entry hides manual role switches and does not recover an Editor draft into a Viewer session. The ordinary Library URL keeps its original role controls. Internal Library tabs preserve the handoff on reload. No Users grants or Firebase configuration are changed.
