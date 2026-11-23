@@ -259,6 +259,7 @@ button.item:hover .disc { transform: scale(1.04); }
 <script src="firebase-config.js?v=1"></script>
 <script src="firebase-auth.js?v=1"></script>
 <script src="firebase-access.js?v=1"></script>
+<script src="activities-access.js?v=23.11.26a"></script>
 <script src="firebase-signin.js?v=1"></script>
 <script src="access-policy.js?v=excel-1"></script>
 <script src="github-store.js"></script>
@@ -629,8 +630,8 @@ button.item:hover .disc { transform: scale(1.04); }
     $("saveUsers").textContent = "Saving…"; msg.textContent = "";
     try {
       // Once autosave is initialized, require verified owner auth before changing grants.
-      var sharedActive=await LabFirebaseAccess.load();
-      if(sharedActive){
+      var sharedActive=await LabFirebaseAccess.load(),activitiesActive=await ActivitiesFirebaseAccess.load();
+      if(sharedActive||activitiesActive){
         await LabFirebaseAuth.ready();
         var firebaseUser=LabFirebaseAuth.user();
         if(!firebaseUser?.emailVerified||firebaseUser.email.toLowerCase()!=="ymahajna@nvidia.com")throw new Error("Use Shared inventory sign-in and verify ymahajna@nvidia.com before saving access changes.");
@@ -638,13 +639,14 @@ button.item:hover .disc { transform: scale(1.04); }
       var result = await Store.saveConnected(ACCESS, DRAFT);
       var sharedSyncError=null;
       if(sharedActive){try{await LabFirebaseAccess.sync(result.data.access);}catch(error){sharedSyncError=error;}}
+      if(activitiesActive){try{await ActivitiesFirebaseAccess.sync(result.data.access);}catch(error){sharedSyncError=error;}}
       DATA = result.data; ACCESS = DATA.access; PLATFORMS = DATA.platforms;
       try { if (Drafts) Drafts.clear(); } catch (e) {}
       draftBase = structuredClone(ACCESS); recovery = null;
       DRAFT = Policy.editableRows(ACCESS); setDirty(false); populateApplicationFilter($("usersApplication").value); drawRows();
       $("draftStatus").textContent = "Saved to GitHub. The shared Users list is up to date.";
       msg.className = sharedSyncError?"msg":"msg ok";
-      msg.textContent=sharedSyncError?"Users saved to GitHub, but shared inventory permissions are not yet synchronized. Open Shared setup and click Sync permissions. "+sharedSyncError.message:"Changes saved for everyone.";
+      msg.textContent=sharedSyncError?"Users saved to GitHub, but one or more Firebase permission lists need synchronization. Open the relevant application's Shared setup and click Sync permissions. "+sharedSyncError.message:"Changes saved for everyone.";
     } catch (error) { exportError(error); }
     finally {
       saving = false; controls.forEach(function (c) { c.disabled = false; }); updateConnectionUI();
@@ -708,4 +710,5 @@ button.item:hover .disc { transform: scale(1.04); }
 </script>
 </body>
 </html>
+
 
