@@ -1,6 +1,6 @@
 # Interconnect Process Lab
 
-The main page that links to every lab platform. Most platforms keep their own repositories and deploy jobs. LabPlan is a standalone static application in lab-build-plan/ and is deployed alongside this hub.
+The main page that links to every lab platform. Each platform, including Lab Build Plan, has its own repository and deployment. This repository hosts the main Process Lab page and application links.
 
 Live page: https://yousefmahajna.github.io/interconnect-process-lab/
 
@@ -133,4 +133,4 @@ The Recipe Library tile passes only the selected email in the URL fragment to th
 
 ## Lab Build Plan
 
-The Lab Build Plan tile opens [LabPlan](https://yousefmahajna.github.io/interconnect-process-lab/lab-build-plan/). All application source, documentation, and checks are in [lab-build-plan/](lab-build-plan/). It is deployed by this repository’s existing Pages workflow. To migrate a plan from the original ChatGPT Site, export its JSON there and import it into the new website. Plans remain browser-local; source deployment does not copy personal browser data. Existing Users grants are unchanged; configure access to the new build-plan application in Users as needed.
+The Lab Build Plan tile opens [LabPlan](https://yousefmahajna.github.io/lab-build-plan/), maintained and deployed from [YousefMahajna/lab-build-plan](https://github.com/YousefMahajna/lab-build-plan). The old `/interconnect-process-lab/lab-build-plan/` address redirects there. Both addresses share the same origin and `labplan-v1` browser storage key, preserving existing plans in the same browser. The hub keeps its original homepage and Users grants. Plans remain browser-local; source deployment does not copy personal browser data.
