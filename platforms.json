@@ -48,6 +48,15 @@
       "repo": "Process-Recipe-Library",
       "icon": "book",
       "color": "#15803D"
+    },
+    {
+      "id": "build-plan",
+      "title": "Lab Build Plan",
+      "group": "Lab",
+      "url": "https://yousefmahajna.github.io/interconnect-process-lab/lab-build-plan/",
+      "repo": "interconnect-process-lab",
+      "icon": "grid",
+      "color": "#174F40"
     }
   ],
   "access": [
