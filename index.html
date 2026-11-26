@@ -405,7 +405,7 @@ button.item:hover .disc { transform: scale(1.04); }
     else if (selected && !allowed) node.setAttribute("aria-disabled", "true");
     if (!selected) node.setAttribute("aria-label", "Sign in to open " + p.title);
     var disc = el("span", "disc");
-    var palette = ({ adhesives: ["#76B900", "#111111"], activities: ["#0068D9", "#FFFFFF"], recipes: ["#111111", "#76B900"], engineers: ["#0068D9", "#76B900"], users: ["#111111", "#76B900"] })[p.id] || ["#0068D9", "#FFFFFF"];
+    var palette = ({ adhesives: ["#76B900", "#111111"], "build-plan": ["#76B900", "#111111"], activities: ["#0068D9", "#FFFFFF"], recipes: ["#111111", "#76B900"], engineers: ["#0068D9", "#76B900"], users: ["#111111", "#76B900"] })[p.id] || ["#0068D9", "#FFFFFF"];
     if ((p.url || action) && (!selected || allowed)) disc.style.background = palette[0];
     disc.appendChild(icon(p.icon, selected && !allowed ? null : (p.url || action) ? palette[1] : null));
     var tag = !selected ? "Sign in to open" : !allowed ? "Locked" : action ? "Application permissions" : p.url ? (p.group || "") : "Link needed";
