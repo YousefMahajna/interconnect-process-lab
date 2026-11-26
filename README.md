@@ -134,3 +134,8 @@ The Recipe Library tile passes only the selected email in the URL fragment to th
 ## Lab Build Plan
 
 The Lab Build Plan tile opens [LabPlan](https://yousefmahajna.github.io/lab-build-plan/), maintained and deployed from [YousefMahajna/lab-build-plan](https://github.com/YousefMahajna/lab-build-plan). The old `/interconnect-process-lab/lab-build-plan/` address redirects there. Both addresses share the same origin and `labplan-v1` browser storage key, preserving existing plans in the same browser. The hub keeps its original homepage and Users grants. Plans remain browser-local; source deployment does not copy personal browser data.
+
+
+## Current LabPlan destination
+
+The **Lab Build Plan** tile opens https://lab-build-plan-jan-feb.nvidia.chatgpt.site — the existing private planner holding the owner's current browser-saved plan and Process development brackets. Opening LabPlan directly or from this hub therefore uses the same website origin and the same saved plan on that browser. Its existing ChatGPT Site sign-in and sharing requirements still apply; hub permission labels do not grant access to that private Site. The GitHub source repository remains `YousefMahajna/lab-build-plan`, and its separately hosted Pages copy has separate browser storage. This link change does not move or publish plan data, change access grants, or enable cross-device synchronization.
