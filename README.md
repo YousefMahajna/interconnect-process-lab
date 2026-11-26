@@ -43,7 +43,7 @@ Edit `platforms.json` on GitHub (the pencil icon), add one entry, and commit. Th
 
 ## X-Section
 
-X-Section has no link yet. Put `xsection-lab.html` in its own repo as `index.html`, turn on Pages, then paste its link into the `url` and `repo` fields for `xsection` in `platforms.json`.
+[X-Section Lab](https://yousefmahajna.github.io/lab-xsection/) is maintained in [YousefMahajna/lab-xsection](https://github.com/YousefMahajna/lab-xsection). Its standalone address and this hub tile open the same deployed application and shared Firebase requests. It opens without a password. Enable its shared storage by publishing the combined rules from its Shared setup page; no data initialization is required. The requests embedded in the original file are preserved locally and are not publicly published.
 
 ## Users and application levels
 
